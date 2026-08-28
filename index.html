@@ -227,6 +227,36 @@ textarea{resize:vertical;min-height:90px;line-height:1.5}
 .expense-header{display:grid;grid-template-columns:1fr 130px 32px;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-faint);padding-bottom:8px;border-bottom:1px solid var(--color-border-strong)}
 .totals{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
 
+/* calendar */
+.year-switch{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--color-text-muted)}
+.year-switch #year-label{min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;text-align:center;font-size:11px;color:var(--color-text-faint);text-transform:uppercase;letter-spacing:.04em}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-day{
+  aspect-ratio:1;border-radius:var(--radius-sm);
+  border:1px solid var(--color-border);background:var(--color-surface-2);
+  color:var(--color-text);font-size:13px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  padding:0;position:relative;
+}
+.cal-day:hover{border-color:var(--color-accent)}
+.cal-day.is-empty{visibility:hidden;cursor:default}
+.cal-day.is-today{border-color:var(--color-accent);color:var(--color-accent-300);font-weight:600}
+.cal-day.is-selected{background:var(--color-accent-900);border-color:var(--color-accent)}
+.cal-day .dot{width:5px;height:5px;border-radius:50%;background:var(--color-accent)}
+.event-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--color-border)}
+.event-row:last-child{border-bottom:none}
+.event-row .event-text{flex:1;min-width:0}
+.event-row .event-time{width:110px;flex:none}
+
+/* reminders / today summary */
+.summary-list{display:flex;flex-direction:column;gap:8px}
+.summary-item{display:flex;align-items:center;gap:8px;font-size:14px}
+.summary-item .dot{width:6px;height:6px;border-radius:50%;background:var(--color-accent);flex:none}
+.notif-status{font-size:12px}
+.notif-status.granted{color:var(--color-accent-300)}
+.notif-status.denied{color:var(--color-danger)}
+
 footer.appfoot{padding:20px 32px 40px;color:var(--color-text-faint);font-size:12px}
 
 /* responsive */
@@ -253,6 +283,9 @@ footer.appfoot{padding:20px 32px 40px;color:var(--color-text-faint);font-size:12
   .grid-cards{grid-template-columns:1fr}
   .week-grid{grid-template-columns:1fr}
   .expense-row,.expense-header{grid-template-columns:1fr 100px 30px}
+  .cal-day{font-size:12px}
+  .event-row{flex-wrap:wrap}
+  .event-row .event-time{width:92px}
 }
 body{padding-bottom:env(safe-area-inset-bottom)}
 </style>
@@ -298,18 +331,55 @@ body{padding-bottom:env(safe-area-inset-bottom)}
           <div class="stat-value accent" id="stat-balance">$0.00</div>
         </div>
       </div>
+      <div class="card" id="today-summary-card">
+        <h2>Hoy tienes</h2>
+        <div id="today-summary"></div>
+      </div>
       <div class="grid-cards">
-        <a class="quick-card" href="#mensual"><span class="qc-title">Mensual</span><span class="qc-sub">Metas y notas del mes</span></a>
+        <a class="quick-card" href="#mensual"><span class="qc-title">Mensual</span><span class="qc-sub">Calendario, metas y notas del mes</span></a>
         <a class="quick-card" href="#semanal"><span class="qc-title">Semanal</span><span class="qc-sub">Tareas por día, lunes a domingo</span></a>
         <a class="quick-card" href="#diario"><span class="qc-title">Diario</span><span class="qc-sub">Tu lista de tareas de hoy</span></a>
         <a class="quick-card" href="#habitos"><span class="qc-title">Hábitos</span><span class="qc-sub">Seguimiento de 31 días</span></a>
         <a class="quick-card" href="#finanzas"><span class="qc-title">Finanzas</span><span class="qc-sub">Ingresos, gastos y saldo</span></a>
       </div>
+      <div class="card">
+        <h2>Recordatorios</h2>
+        <div class="field" style="margin-bottom:10px">
+          <label>Notificaciones</label>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button type="button" class="btn" id="notif-permission-btn">Activar notificaciones</button>
+            <span class="meta" id="notif-permission-status"></span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="daily-check-time">Avisarme si quedan tareas de hoy sin marcar, a las</label>
+          <input type="time" id="daily-check-time">
+        </div>
+      </div>
     </section>
 
     <section id="view-mensual" class="view" hidden>
-      <div class="view-header"><h1>Mensual</h1></div>
+      <div class="view-header">
+        <h1>Mensual</h1>
+        <div class="year-switch">
+          <button type="button" class="btn-icon" id="year-prev" aria-label="Año anterior">‹</button>
+          <span id="year-label"></span>
+          <button type="button" class="btn-icon" id="year-next" aria-label="Año siguiente">›</button>
+        </div>
+      </div>
       <div class="tabs" id="month-tabs"></div>
+      <div class="card">
+        <h2>Calendario</h2>
+        <div class="cal-weekdays">
+          <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="card" id="day-panel" hidden>
+        <h2 id="day-panel-title">Día</h2>
+        <div id="day-events"></div>
+        <div class="list-actions"><button type="button" class="btn" id="day-event-add">+ Agregar evento</button></div>
+      </div>
       <div class="card">
         <h2>Metas del mes</h2>
         <div id="monthly-tasks"></div>
@@ -405,9 +475,11 @@ function defaultState(){
   return {
     diario: { tasks: [] },
     semanal: { days: WEEKDAYS_ES.map(function(name){ return { name: name, tasks: [] }; }) },
-    mensual: { selected: 0, months: MONTHS_ES.map(function(name){ return { name: name, tasks: [], notes: "" }; }) },
+    mensual: { selected: 0, selectedYear: new Date().getFullYear(), months: MONTHS_ES.map(function(name){ return { name: name, tasks: [], notes: "" }; }) },
     habitos: { items: [] },
-    finanzas: { salary: 0, expenses: [] }
+    finanzas: { salary: 0, expenses: [] },
+    calendario: {},
+    reminders: { dailyCheckTime: "20:00", notifiedIds: [], notifiedDailyDates: [] }
   };
 }
 
@@ -436,11 +508,22 @@ function loadState(){
         if(typeof parsed.mensual.selected === "number" && parsed.mensual.selected >= 0 && parsed.mensual.selected < 12){
           base.mensual.selected = parsed.mensual.selected;
         }
+        if(typeof parsed.mensual.selectedYear === "number" && parsed.mensual.selectedYear > 1900){
+          base.mensual.selectedYear = parsed.mensual.selectedYear;
+        }
       }
       if(parsed.habitos && Array.isArray(parsed.habitos.items)) base.habitos.items = parsed.habitos.items;
       if(parsed.finanzas){
         base.finanzas.salary = Number(parsed.finanzas.salary) || 0;
         if(Array.isArray(parsed.finanzas.expenses)) base.finanzas.expenses = parsed.finanzas.expenses;
+      }
+      if(parsed.calendario && typeof parsed.calendario === "object"){
+        base.calendario = parsed.calendario;
+      }
+      if(parsed.reminders && typeof parsed.reminders === "object"){
+        if(typeof parsed.reminders.dailyCheckTime === "string") base.reminders.dailyCheckTime = parsed.reminders.dailyCheckTime;
+        if(Array.isArray(parsed.reminders.notifiedIds)) base.reminders.notifiedIds = parsed.reminders.notifiedIds;
+        if(Array.isArray(parsed.reminders.notifiedDailyDates)) base.reminders.notifiedDailyDates = parsed.reminders.notifiedDailyDates;
       }
     }
     return base;
@@ -576,10 +659,13 @@ function renderMonthTabs(){
   tabsEl.querySelectorAll(".tab").forEach(function(btn){
     btn.addEventListener("click", function(){
       state.mensual.selected = Number(btn.dataset.month);
+      calSelectedDay = null;
       saveState();
       renderMonthTabs();
       renderMonthlyTasks();
       monthlyNotesEl.value = state.mensual.months[state.mensual.selected].notes;
+      renderCalendar();
+      renderDayPanel();
     });
   });
 }
@@ -589,6 +675,144 @@ monthlyNotesEl.addEventListener("input", function(){
   state.mensual.months[state.mensual.selected].notes = monthlyNotesEl.value;
   saveState();
 });
+
+/* ---------- calendario mensual ---------- */
+var calSelectedDay = null;
+function pad2(n){ return n < 10 ? "0" + n : "" + n; }
+function monthKey(year, monthIndex){ return year + "-" + pad2(monthIndex + 1); }
+
+function getMonthEvents(year, monthIndex){
+  var m = state.calendario[monthKey(year, monthIndex)];
+  return (m && m.events) || {};
+}
+function getDayEventsReadonly(year, monthIndex, day){
+  return getMonthEvents(year, monthIndex)[day] || [];
+}
+function ensureDayEvents(year, monthIndex, day){
+  var key = monthKey(year, monthIndex);
+  if(!state.calendario[key]) state.calendario[key] = { events: {} };
+  if(!state.calendario[key].events[day]) state.calendario[key].events[day] = [];
+  return state.calendario[key].events[day];
+}
+function currentDayEventsArray(){
+  return ensureDayEvents(state.mensual.selectedYear, state.mensual.selected, calSelectedDay);
+}
+
+function computeMonthCells(year, monthIndex){
+  var firstDow = new Date(year, monthIndex, 1).getDay();
+  var leading = (firstDow + 6) % 7;
+  var daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  var cells = [];
+  var i;
+  for(i = 0; i < leading; i++){ cells.push(null); }
+  for(i = 1; i <= daysInMonth; i++){ cells.push(i); }
+  return cells;
+}
+
+function renderCalendar(){
+  var year = state.mensual.selectedYear;
+  var monthIndex = state.mensual.selected;
+  document.getElementById("year-label").textContent = year;
+  var cells = computeMonthCells(year, monthIndex);
+  var now = new Date();
+  var isCurrentRealMonth = now.getFullYear() === year && now.getMonth() === monthIndex;
+  var todayDate = now.getDate();
+  var gridEl = document.getElementById("cal-grid");
+  gridEl.innerHTML = cells.map(function(day){
+    if(day === null) return '<span class="cal-day is-empty"></span>';
+    var evts = getDayEventsReadonly(year, monthIndex, day);
+    var classes = "cal-day";
+    if(isCurrentRealMonth && day === todayDate) classes += " is-today";
+    if(calSelectedDay === day) classes += " is-selected";
+    return '<button type="button" class="' + classes + '" data-day="' + day + '">' +
+      "<span>" + day + "</span>" +
+      (evts.length ? '<span class="dot"></span>' : "") +
+      "</button>";
+  }).join("");
+  gridEl.querySelectorAll(".cal-day:not(.is-empty)").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      calSelectedDay = Number(btn.dataset.day);
+      renderCalendar();
+      renderDayPanel();
+    });
+  });
+}
+
+function renderDayEvents(){
+  var container = document.getElementById("day-events");
+  var events = getDayEventsReadonly(state.mensual.selectedYear, state.mensual.selected, calSelectedDay);
+  if(!events.length){
+    container.innerHTML = '<p class="empty-hint">No hay eventos este día. Agrega uno abajo.</p>';
+    return;
+  }
+  container.innerHTML = events.map(function(ev){
+    return '<div class="event-row" data-id="' + ev.id + '">' +
+      '<input type="text" class="event-text" value="' + escapeHtml(ev.text) + '" placeholder="Ej. Parcial de Estructuras">' +
+      '<input type="time" class="event-time" value="' + escapeHtml(ev.time || "") + '" aria-label="Hora del recordatorio">' +
+      '<button type="button" class="btn-icon event-delete" aria-label="Eliminar evento" title="Eliminar">✕</button>' +
+      "</div>";
+  }).join("");
+}
+
+function renderDayPanel(){
+  var panel = document.getElementById("day-panel");
+  if(calSelectedDay === null){ panel.hidden = true; return; }
+  panel.hidden = false;
+  var dateObj = new Date(state.mensual.selectedYear, state.mensual.selected, calSelectedDay);
+  var label = dateObj.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  document.getElementById("day-panel-title").textContent = label.charAt(0).toUpperCase() + label.slice(1);
+  renderDayEvents();
+}
+
+document.getElementById("day-events").addEventListener("input", function(e){
+  var row = e.target.closest(".event-row");
+  if(!row) return;
+  var events = currentDayEventsArray();
+  var ev = events.find(function(x){ return x.id === row.dataset.id; });
+  if(!ev) return;
+  if(e.target.classList.contains("event-text")){ ev.text = e.target.value; saveState(); }
+  else if(e.target.classList.contains("event-time")){ ev.time = e.target.value; saveState(); }
+});
+document.getElementById("day-events").addEventListener("click", function(e){
+  if(!e.target.classList.contains("event-delete")) return;
+  var row = e.target.closest(".event-row");
+  var events = currentDayEventsArray();
+  var idx = events.findIndex(function(x){ return x.id === row.dataset.id; });
+  if(idx === -1) return;
+  events.splice(idx, 1);
+  saveState();
+  renderDayEvents();
+  renderCalendar();
+});
+document.getElementById("day-event-add").addEventListener("click", function(){
+  var events = currentDayEventsArray();
+  var ev = { id: uid(), text: "", time: "" };
+  events.push(ev);
+  saveState();
+  renderDayEvents();
+  renderCalendar();
+  requestAnimationFrame(function(){
+    var input = document.querySelector('#day-events .event-row[data-id="' + ev.id + '"] .event-text');
+    if(input) input.focus();
+  });
+});
+document.getElementById("year-prev").addEventListener("click", function(){
+  state.mensual.selectedYear -= 1;
+  calSelectedDay = null;
+  saveState();
+  renderCalendar();
+  renderDayPanel();
+});
+document.getElementById("year-next").addEventListener("click", function(){
+  state.mensual.selectedYear += 1;
+  calSelectedDay = null;
+  saveState();
+  renderCalendar();
+  renderDayPanel();
+});
+
+renderCalendar();
+renderDayPanel();
 
 /* ---------- habitos ---------- */
 var habitsListEl = document.getElementById("habits-list");
@@ -744,13 +968,130 @@ function renderInicioStats(){
   balanceEl.textContent = formatCurrency(ingresos - gastos);
   balanceEl.classList.toggle("negative", (ingresos - gastos) < 0);
 }
+function renderTodaySummary(){
+  var now = new Date();
+  var todays = getDayEventsReadonly(now.getFullYear(), now.getMonth(), now.getDate()).slice().sort(function(a, b){
+    return (a.time || "99:99").localeCompare(b.time || "99:99");
+  });
+  var pending = state.diario.tasks.filter(function(t){ return !t.done; }).length;
+  var items = [];
+  todays.forEach(function(ev){
+    if(!ev.text) return;
+    items.push('<div class="summary-item"><span class="dot"></span><span>' + escapeHtml(ev.text) + (ev.time ? " · " + escapeHtml(ev.time) : "") + "</span></div>");
+  });
+  if(pending > 0){
+    items.push('<div class="summary-item"><span class="dot"></span><span>' + pending + " tarea" + (pending === 1 ? "" : "s") + " pendiente" + (pending === 1 ? "" : "s") + " en Diario</span></div>");
+  }
+  var container = document.getElementById("today-summary");
+  container.innerHTML = items.length
+    ? '<div class="summary-list">' + items.join("") + "</div>"
+    : '<p class="empty-hint">No tienes eventos ni tareas pendientes para hoy.</p>';
+}
+
 function renderInicio(){
   var today = new Date();
   var label = today.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   document.getElementById("today-label").textContent = label;
   document.getElementById("diario-date").textContent = label;
   renderInicioStats();
+  renderTodaySummary();
 }
+
+/* ---------- notificaciones / recordatorios ---------- */
+function todayKey(){
+  var d = new Date();
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+function nowHHMM(){
+  var d = new Date();
+  return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+}
+
+function updateNotifPermissionUI(){
+  var btn = document.getElementById("notif-permission-btn");
+  var status = document.getElementById("notif-permission-status");
+  if(!("Notification" in window)){
+    btn.hidden = true;
+    status.textContent = "Este navegador no soporta notificaciones.";
+    return;
+  }
+  var perm = Notification.permission;
+  status.className = "meta notif-status " + perm;
+  if(perm === "granted"){
+    btn.hidden = true;
+    status.textContent = "Notificaciones activadas.";
+  } else if(perm === "denied"){
+    btn.hidden = true;
+    status.textContent = "Bloqueadas. Actívalas desde los ajustes del sitio en Chrome.";
+  } else {
+    btn.hidden = false;
+    status.textContent = "";
+  }
+}
+document.getElementById("notif-permission-btn").addEventListener("click", function(){
+  if(!("Notification" in window)) return;
+  Notification.requestPermission().then(function(){
+    updateNotifPermissionUI();
+  });
+});
+
+var dailyCheckInput = document.getElementById("daily-check-time");
+dailyCheckInput.value = state.reminders.dailyCheckTime || "20:00";
+dailyCheckInput.addEventListener("input", function(){
+  state.reminders.dailyCheckTime = dailyCheckInput.value;
+  saveState();
+});
+
+function showLocalNotification(title, body, tag){
+  if(!("Notification" in window) || Notification.permission !== "granted") return;
+  if(!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.ready.then(function(reg){
+    reg.showNotification(title, {
+      body: body,
+      tag: tag,
+      icon: "icons/icon-192.png",
+      badge: "icons/icon-192.png"
+    });
+  });
+}
+
+function checkReminders(){
+  if(!("Notification" in window) || Notification.permission !== "granted") return;
+
+  var now = new Date();
+  var hhmm = nowHHMM();
+  var tKey = todayKey();
+
+  var todays = getDayEventsReadonly(now.getFullYear(), now.getMonth(), now.getDate());
+  todays.forEach(function(ev){
+    if(!ev.time) return;
+    if(state.reminders.notifiedIds.indexOf(ev.id) !== -1) return;
+    if(ev.time <= hhmm){
+      showLocalNotification("Recordatorio: " + (ev.text || "Evento"), "Hoy a las " + ev.time, "event-" + ev.id);
+      state.reminders.notifiedIds.push(ev.id);
+      saveState();
+    }
+  });
+
+  if(state.reminders.dailyCheckTime && state.reminders.notifiedDailyDates.indexOf(tKey) === -1 && state.reminders.dailyCheckTime <= hhmm){
+    var pending = state.diario.tasks.filter(function(t){ return !t.done; }).length;
+    if(pending > 0){
+      showLocalNotification("Tareas pendientes", "Tienes " + pending + " tarea" + (pending === 1 ? "" : "s") + " sin marcar hoy.", "daily-check");
+    }
+    state.reminders.notifiedDailyDates.push(tKey);
+    saveState();
+  }
+}
+
+updateNotifPermissionUI();
+checkReminders();
+setInterval(checkReminders, 60000);
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "visible"){
+    checkReminders();
+    if(!document.getElementById("view-inicio").hidden) renderInicio();
+  }
+});
 
 /* ---------- routing ---------- */
 function showView(name){
@@ -763,6 +1104,7 @@ function showView(name){
     a.classList.toggle("active", a.dataset.view === name);
   });
   if(name === "inicio") renderInicio();
+  if(name === "mensual") renderCalendar();
   window.scrollTo(0, 0);
 }
 window.addEventListener("hashchange", function(){
