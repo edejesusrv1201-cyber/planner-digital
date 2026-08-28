@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Planner Digital — Todo en uno</title>
+<meta name="description" content="Planner digital con tareas, hábitos y finanzas. Funciona sin conexión.">
+
+<!-- PWA: manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#161826">
+
+<!-- PWA: favicons -->
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-16.png" sizes="16x16" type="image/png">
+
+<!-- PWA: iOS / Safari "Agregar a inicio" -->
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Planner Digital">
+
+<!-- PWA: Android / Chrome -->
+<meta name="mobile-web-app-capable" content="yes">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --color-bg:#161826;
+  --color-surface:#1d1f2c;
+  --color-surface-2:#232532;
+  --color-surface-3:#2b2e3d;
+  --color-text:#e9e9ed;
+  --color-text-muted:#9397ab;
+  --color-text-faint:#75798c;
+  --color-border:#3f424d;
+  --color-border-strong:#595d6c;
+  --color-accent:#9184d9;
+  --color-accent-300:#d2cefd;
+  --color-accent-600:#796cbf;
+  --color-accent-800:#423a6a;
+  --color-accent-900:#2b2741;
+  --color-danger:#e08585;
+  --color-danger-600:#c96a6a;
+  --font-body:'Inter', system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-sm:4px;
+  --radius-md:8px;
+  --radius-lg:14px;
+  --shadow-sm:0 0 0 1px var(--color-border);
+  --shadow-md:0 0 0 1px var(--color-border-strong), 0 6px 18px rgba(0,0,0,0.55);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--color-bg);
+  color:var(--color-text);
+  font-family:var(--font-body);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-weight:600;margin:0}
+p{margin:0}
+a{color:var(--color-accent-300);text-decoration:none}
+a:hover{color:var(--color-accent)}
+button{font-family:inherit}
+::selection{background:var(--color-accent-800);color:var(--color-text)}
+
+/* layout */
+.app{display:flex;min-height:100vh}
+.sidebar{
+  width:220px;flex:none;
+  background:var(--color-surface);
+  border-right:1px solid var(--color-border);
+  display:flex;flex-direction:column;
+  padding:20px 14px;
+  gap:18px;
+  position:sticky;top:0;height:100vh;
+  overflow-y:auto;
+}
+.brand{display:flex;flex-direction:column;gap:2px;padding:0 8px}
+.brand-name{font-size:15px;font-weight:600;color:var(--color-text)}
+.brand-sub{font-size:11px;letter-spacing:.04em;color:var(--color-text-faint);text-transform:uppercase}
+.nav{display:flex;flex-direction:column;gap:2px}
+.navlink{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 10px;border-radius:var(--radius-sm);
+  color:var(--color-text-muted);font-size:14px;font-weight:500;
+  border-left:2px solid transparent;
+}
+.navlink svg{flex:none;opacity:.85}
+.navlink:hover{background:var(--color-surface-2);color:var(--color-text)}
+.navlink.active{background:var(--color-surface-2);color:var(--color-text);border-left-color:var(--color-accent)}
+.sidebar-footer{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+
+.content{flex:1;min-width:0;padding:28px 32px 60px;max-width:1040px}
+.view-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+.view-header h1{font-size:22px}
+.view-header .meta{font-size:12px;color:var(--color-text-faint);text-transform:uppercase;letter-spacing:.06em}
+
+/* topbar (mobile) */
+.topbar{display:none}
+
+/* cards & sections */
+.card{
+  background:var(--color-surface);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-md);
+  padding:18px;
+  margin-bottom:18px;
+}
+.card h2{font-size:14px;letter-spacing:.02em;color:var(--color-text);margin-bottom:14px}
+.card + .card{margin-top:0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+/* index quick cards */
+.quick-card{
+  display:flex;flex-direction:column;gap:6px;
+  background:var(--color-surface);border:1px solid var(--color-border);
+  border-radius:var(--radius-md);padding:16px;
+  color:var(--color-text);
+}
+.quick-card:hover{border-color:var(--color-accent);color:var(--color-text)}
+.quick-card .qc-title{font-size:14px;font-weight:600}
+.quick-card .qc-sub{font-size:12px;color:var(--color-text-faint)}
+.stat-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.stat{
+  flex:1;min-width:150px;
+  background:var(--color-surface);border:1px solid var(--color-border);
+  border-radius:var(--radius-md);padding:16px;
+}
+.stat .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-faint)}
+.stat .stat-value{font-size:24px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums}
+.stat-value.negative{color:var(--color-danger)}
+.stat-value.accent{color:var(--color-accent-300)}
+
+/* buttons */
+.btn{
+  appearance:none;border-radius:999px;padding:8px 16px;
+  font-size:13px;font-weight:500;cursor:pointer;
+  background:transparent;border:1px solid var(--color-accent);
+  color:var(--color-accent-300);
+  display:inline-flex;align-items:center;gap:6px;
+}
+.btn:hover{background:var(--color-accent-900)}
+.btn:active{background:var(--color-accent-800)}
+.btn-secondary{border-color:var(--color-border-strong);color:var(--color-text-muted)}
+.btn-secondary:hover{background:var(--color-surface-2);color:var(--color-text)}
+.btn-danger{border-color:var(--color-danger-600);color:var(--color-danger)}
+.btn-danger:hover{background:color-mix(in srgb, var(--color-danger) 14%, transparent)}
+.btn-icon{
+  appearance:none;border:1px solid transparent;background:transparent;
+  color:var(--color-text-faint);cursor:pointer;
+  width:28px;height:28px;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;flex:none;font-size:13px;
+}
+.btn-icon:hover{background:color-mix(in srgb, var(--color-danger) 16%, transparent);color:var(--color-danger)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{
+  outline:2px solid var(--color-accent);outline-offset:2px;
+}
+
+/* inputs */
+input[type=text],input[type=number],textarea{
+  background:var(--color-surface-2);
+  border:1px solid var(--color-border);
+  color:var(--color-text);
+  border-radius:var(--radius-sm);
+  padding:9px 10px;font-size:14px;font-family:inherit;
+  width:100%;
+}
+input[type=text]::placeholder,textarea::placeholder{color:var(--color-text-faint)}
+input[type=checkbox]{accent-color:var(--color-accent);width:18px;height:18px;flex:none;cursor:pointer}
+textarea{resize:vertical;min-height:90px;line-height:1.5}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:12px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.04em}
+
+/* task rows */
+.task-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--color-border)}
+.task-row:last-child{border-bottom:none}
+.task-text{border:1px solid transparent;background:transparent;padding:6px 8px}
+.task-text:hover{background:var(--color-surface-2)}
+.task-text:focus{background:var(--color-surface-2);border-color:var(--color-border)}
+.task-text.is-done{color:var(--color-text-faint);text-decoration:line-through}
+.empty-hint{color:var(--color-text-faint);font-size:13px;padding:10px 0}
+.list-actions{margin-top:12px}
+
+/* weekly */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:14px}
+.week-day{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;display:flex;flex-direction:column;min-width:0}
+.week-day h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-muted);margin-bottom:8px}
+.week-day .task-row{gap:8px}
+.week-day .add-mini{margin-top:10px;align-self:flex-start}
+
+/* monthly tabs */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.tab{
+  border:1px solid var(--color-border);background:var(--color-surface);
+  color:var(--color-text-muted);padding:6px 12px;border-radius:999px;
+  font-size:12.5px;cursor:pointer;
+}
+.tab:hover{color:var(--color-text)}
+.tab.active{border-color:var(--color-accent);color:var(--color-accent-300);background:var(--color-accent-900)}
+
+/* habits */
+.habit-table{overflow-x:auto;border:1px solid var(--color-border);border-radius:var(--radius-md)}
+.habit-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--color-border);min-width:max-content}
+.habit-row:last-child{border-bottom:none}
+.habit-header{background:var(--color-surface-2);color:var(--color-text-faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+.habit-row input.habit-name{width:170px;flex:none}
+.habit-name-label{width:170px;flex:none}
+.habit-days{display:flex;gap:4px}
+.habit-day-num{width:22px;flex:none;text-align:center;font-size:10px}
+.habit-day{
+  width:22px;height:22px;flex:none;border-radius:5px;
+  border:1px solid var(--color-border-strong);background:var(--color-surface-2);cursor:pointer;padding:0;
+}
+.habit-day:hover{border-color:var(--color-accent)}
+.habit-day.is-done{background:var(--color-accent);border-color:var(--color-accent)}
+.habit-del-label{width:28px;flex:none}
+
+/* finance */
+.expense-row{display:grid;grid-template-columns:1fr 130px 32px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--color-border)}
+.expense-row:last-child{border-bottom:none}
+.expense-header{display:grid;grid-template-columns:1fr 130px 32px;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-faint);padding-bottom:8px;border-bottom:1px solid var(--color-border-strong)}
+.totals{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+
+footer.appfoot{padding:20px 32px 40px;color:var(--color-text-faint);font-size:12px}
+
+/* responsive */
+@media (max-width:860px){
+  .grid-2{grid-template-columns:1fr}
+  .grid-cards{grid-template-columns:1fr 1fr}
+  .week-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:768px){
+  .app{flex-direction:column}
+  .sidebar{
+    position:sticky;top:0;height:auto;width:100%;
+    flex-direction:row;align-items:center;overflow-x:auto;overflow-y:hidden;
+    padding:calc(10px + env(safe-area-inset-top)) 12px 10px;gap:14px;z-index:10;
+    border-right:none;border-bottom:1px solid var(--color-border);
+  }
+  .brand{padding:0;white-space:nowrap}
+  .brand-sub{display:none}
+  .nav{flex-direction:row;gap:4px}
+  .navlink{white-space:nowrap;border-left:none;border-bottom:2px solid transparent}
+  .navlink.active{border-left-color:transparent;border-bottom-color:var(--color-accent)}
+  .sidebar-footer{margin-top:0;flex-direction:row}
+  .content{padding:20px 16px 50px}
+  .grid-cards{grid-template-columns:1fr}
+  .week-grid{grid-template-columns:1fr}
+  .expense-row,.expense-header{grid-template-columns:1fr 100px 30px}
+}
+body{padding-bottom:env(safe-area-inset-bottom)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-name">Planner Digital</span>
+      <span class="brand-sub">Todo en uno</span>
+    </div>
+    <nav class="nav">
+      <a class="navlink" data-view="inicio" href="#inicio">Índice</a>
+      <a class="navlink" data-view="mensual" href="#mensual">Mensual</a>
+      <a class="navlink" data-view="semanal" href="#semanal">Semanal</a>
+      <a class="navlink" data-view="diario" href="#diario">Diario</a>
+      <a class="navlink" data-view="habitos" href="#habitos">Hábitos</a>
+      <a class="navlink" data-view="finanzas" href="#finanzas">Finanzas</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button type="button" class="btn btn-danger" id="reset-btn">Borrar todo</button>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <section id="view-inicio" class="view">
+      <div class="view-header">
+        <h1>Índice</h1>
+        <span class="meta" id="today-label"></span>
+      </div>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="stat-label">Tareas pendientes hoy</div>
+          <div class="stat-value" id="stat-pending">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Hábitos activos</div>
+          <div class="stat-value" id="stat-habits">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Saldo del mes</div>
+          <div class="stat-value accent" id="stat-balance">$0.00</div>
+        </div>
+      </div>
+      <div class="grid-cards">
+        <a class="quick-card" href="#mensual"><span class="qc-title">Mensual</span><span class="qc-sub">Metas y notas del mes</span></a>
+        <a class="quick-card" href="#semanal"><span class="qc-title">Semanal</span><span class="qc-sub">Tareas por día, lunes a domingo</span></a>
+        <a class="quick-card" href="#diario"><span class="qc-title">Diario</span><span class="qc-sub">Tu lista de tareas de hoy</span></a>
+        <a class="quick-card" href="#habitos"><span class="qc-title">Hábitos</span><span class="qc-sub">Seguimiento de 31 días</span></a>
+        <a class="quick-card" href="#finanzas"><span class="qc-title">Finanzas</span><span class="qc-sub">Ingresos, gastos y saldo</span></a>
+      </div>
+    </section>
+
+    <section id="view-mensual" class="view" hidden>
+      <div class="view-header"><h1>Mensual</h1></div>
+      <div class="tabs" id="month-tabs"></div>
+      <div class="card">
+        <h2>Metas del mes</h2>
+        <div id="monthly-tasks"></div>
+        <div class="list-actions"><button type="button" class="btn" id="monthly-add">+ Agregar meta</button></div>
+      </div>
+      <div class="card">
+        <h2>Notas</h2>
+        <textarea id="monthly-notes" placeholder="Escribe notas o ideas para este mes..."></textarea>
+      </div>
+    </section>
+
+    <section id="view-semanal" class="view" hidden>
+      <div class="view-header"><h1>Semanal</h1></div>
+      <div class="week-grid" id="week-grid"></div>
+    </section>
+
+    <section id="view-diario" class="view" hidden>
+      <div class="view-header">
+        <h1>Diario</h1>
+        <span class="meta" id="diario-date"></span>
+      </div>
+      <div class="card">
+        <h2>Tareas de hoy</h2>
+        <div id="diario-tasks"></div>
+        <div class="list-actions"><button type="button" class="btn" id="diario-add">+ Agregar tarea</button></div>
+      </div>
+    </section>
+
+    <section id="view-habitos" class="view" hidden>
+      <div class="view-header"><h1>Hábitos</h1></div>
+      <div class="card">
+        <h2>Seguimiento — 31 días</h2>
+        <div id="habits-list"></div>
+        <div class="list-actions"><button type="button" class="btn" id="habits-add">+ Agregar hábito</button></div>
+      </div>
+    </section>
+
+    <section id="view-finanzas" class="view" hidden>
+      <div class="view-header"><h1>Finanzas</h1></div>
+      <div class="card">
+        <h2>Ingresos</h2>
+        <div class="field">
+          <label for="salary-input">Salario / ingreso mensual</label>
+          <input type="number" id="salary-input" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <div class="card">
+        <h2>Gastos</h2>
+        <div class="expense-header"><span>Concepto</span><span>Monto</span><span></span></div>
+        <div id="expenses-list"></div>
+        <div class="list-actions"><button type="button" class="btn" id="expenses-add">+ Agregar gasto</button></div>
+      </div>
+      <div class="totals">
+        <div class="stat">
+          <div class="stat-label">Total ingresos</div>
+          <div class="stat-value" id="total-ingresos">$0.00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Total gastos</div>
+          <div class="stat-value" id="total-gastos">$0.00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Saldo</div>
+          <div class="stat-value accent" id="total-saldo">$0.00</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+<footer class="appfoot">Los datos se guardan automáticamente en este navegador (localStorage).</footer>
+
+<script>
+(function(){
+"use strict";
+
+var STORAGE_KEY = "plannerDigitalTodoEnUno_v1";
+var VIEWS = ["inicio","mensual","semanal","diario","habitos","finanzas"];
+var MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+var WEEKDAYS_ES = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+
+function uid(){
+  return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
+}
+
+function escapeHtml(str){
+  return String(str == null ? "" : str).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+
+function defaultState(){
+  return {
+    diario: { tasks: [] },
+    semanal: { days: WEEKDAYS_ES.map(function(name){ return { name: name, tasks: [] }; }) },
+    mensual: { selected: 0, months: MONTHS_ES.map(function(name){ return { name: name, tasks: [], notes: "" }; }) },
+    habitos: { items: [] },
+    finanzas: { salary: 0, expenses: [] }
+  };
+}
+
+function loadState(){
+  var base = defaultState();
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return base;
+    var parsed = JSON.parse(raw);
+    if(parsed && typeof parsed === "object"){
+      if(parsed.diario && Array.isArray(parsed.diario.tasks)) base.diario.tasks = parsed.diario.tasks;
+      if(parsed.semanal && Array.isArray(parsed.semanal.days)){
+        base.semanal.days.forEach(function(d, i){
+          if(parsed.semanal.days[i] && Array.isArray(parsed.semanal.days[i].tasks)){
+            d.tasks = parsed.semanal.days[i].tasks;
+          }
+        });
+      }
+      if(parsed.mensual && Array.isArray(parsed.mensual.months)){
+        base.mensual.months.forEach(function(m, i){
+          if(parsed.mensual.months[i]){
+            m.tasks = Array.isArray(parsed.mensual.months[i].tasks) ? parsed.mensual.months[i].tasks : [];
+            m.notes = typeof parsed.mensual.months[i].notes === "string" ? parsed.mensual.months[i].notes : "";
+          }
+        });
+        if(typeof parsed.mensual.selected === "number" && parsed.mensual.selected >= 0 && parsed.mensual.selected < 12){
+          base.mensual.selected = parsed.mensual.selected;
+        }
+      }
+      if(parsed.habitos && Array.isArray(parsed.habitos.items)) base.habitos.items = parsed.habitos.items;
+      if(parsed.finanzas){
+        base.finanzas.salary = Number(parsed.finanzas.salary) || 0;
+        if(Array.isArray(parsed.finanzas.expenses)) base.finanzas.expenses = parsed.finanzas.expenses;
+      }
+    }
+    return base;
+  }catch(e){
+    console.warn("No se pudo leer lo guardado, se usan valores por defecto.", e);
+    return base;
+  }
+}
+
+var state = loadState();
+var saveTimer = null;
+function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 250);
+}
+function saveNow(){
+  clearTimeout(saveTimer);
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e){ console.error("No se pudo guardar en localStorage.", e); }
+}
+function flushOnHide(){
+  if(document.visibilityState === "hidden") saveNow();
+}
+window.addEventListener("pagehide", saveNow);
+document.addEventListener("visibilitychange", flushOnHide);
+
+/* ---------- generic task list ---------- */
+function renderTaskListInto(containerEl, tasks){
+  if(!tasks.length){
+    containerEl.innerHTML = '<p class="empty-hint">No hay tareas todavía. Agrega una abajo.</p>';
+    return;
+  }
+  containerEl.innerHTML = tasks.map(function(t){
+    return '<div class="task-row" data-id="' + t.id + '">' +
+      '<input type="checkbox" class="task-check"' + (t.done ? " checked" : "") + ' aria-label="Marcar tarea completada">' +
+      '<input type="text" class="task-text' + (t.done ? " is-done" : "") + '" value="' + escapeHtml(t.text) + '" placeholder="Escribe una tarea...">' +
+      '<button type="button" class="btn-icon task-delete" aria-label="Eliminar tarea" title="Eliminar">✕</button>' +
+      '</div>';
+  }).join("");
+}
+
+function setupTaskList(containerEl, addBtnEl, getTasks, onAfterChange){
+  function render(){ renderTaskListInto(containerEl, getTasks()); }
+
+  containerEl.addEventListener("click", function(e){
+    var row = e.target.closest(".task-row");
+    if(!row) return;
+    var tasks = getTasks();
+    var idx = tasks.findIndex(function(t){ return t.id === row.dataset.id; });
+    if(idx === -1) return;
+    if(e.target.classList.contains("task-delete")){
+      tasks.splice(idx, 1);
+      saveState();
+      render();
+      if(onAfterChange) onAfterChange();
+    } else if(e.target.classList.contains("task-check")){
+      tasks[idx].done = e.target.checked;
+      var textEl = row.querySelector(".task-text");
+      if(textEl) textEl.classList.toggle("is-done", tasks[idx].done);
+      saveState();
+      if(onAfterChange) onAfterChange();
+    }
+  });
+
+  containerEl.addEventListener("input", function(e){
+    if(!e.target.classList.contains("task-text")) return;
+    var row = e.target.closest(".task-row");
+    var tasks = getTasks();
+    var t = tasks.find(function(t){ return t.id === row.dataset.id; });
+    if(t){ t.text = e.target.value; saveState(); }
+  });
+
+  addBtnEl.addEventListener("click", function(){
+    var tasks = getTasks();
+    var t = { id: uid(), text: "", done: false };
+    tasks.push(t);
+    saveState();
+    render();
+    if(onAfterChange) onAfterChange();
+    requestAnimationFrame(function(){
+      var input = containerEl.querySelector('.task-row[data-id="' + t.id + '"] .task-text');
+      if(input) input.focus();
+    });
+  });
+
+  render();
+  return render;
+}
+
+/* ---------- diario ---------- */
+var renderDiario = setupTaskList(
+  document.getElementById("diario-tasks"),
+  document.getElementById("diario-add"),
+  function(){ return state.diario.tasks; },
+  function(){ renderInicioStats(); }
+);
+
+/* ---------- semanal ---------- */
+(function initWeekly(){
+  var grid = document.getElementById("week-grid");
+  grid.innerHTML = state.semanal.days.map(function(d){
+    return '<div class="week-day" data-day-name="' + escapeHtml(d.name) + '">' +
+      "<h3>" + escapeHtml(d.name) + "</h3>" +
+      '<div class="task-list"></div>' +
+      '<button type="button" class="btn btn-secondary add-mini">+ Agregar</button>' +
+      "</div>";
+  }).join("");
+  var dayEls = grid.querySelectorAll(".week-day");
+  dayEls.forEach(function(dayEl, i){
+    setupTaskList(
+      dayEl.querySelector(".task-list"),
+      dayEl.querySelector(".add-mini"),
+      function(){ return state.semanal.days[i].tasks; }
+    );
+  });
+})();
+
+/* ---------- mensual ---------- */
+var monthlyTasksEl = document.getElementById("monthly-tasks");
+var monthlyAddEl = document.getElementById("monthly-add");
+var monthlyNotesEl = document.getElementById("monthly-notes");
+var renderMonthlyTasks = setupTaskList(
+  monthlyTasksEl,
+  monthlyAddEl,
+  function(){ return state.mensual.months[state.mensual.selected].tasks; }
+);
+
+function renderMonthTabs(){
+  var tabsEl = document.getElementById("month-tabs");
+  tabsEl.innerHTML = state.mensual.months.map(function(m, i){
+    return '<button type="button" class="tab' + (i === state.mensual.selected ? " active" : "") + '" data-month="' + i + '">' + m.name + "</button>";
+  }).join("");
+  tabsEl.querySelectorAll(".tab").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      state.mensual.selected = Number(btn.dataset.month);
+      saveState();
+      renderMonthTabs();
+      renderMonthlyTasks();
+      monthlyNotesEl.value = state.mensual.months[state.mensual.selected].notes;
+    });
+  });
+}
+renderMonthTabs();
+monthlyNotesEl.value = state.mensual.months[state.mensual.selected].notes;
+monthlyNotesEl.addEventListener("input", function(){
+  state.mensual.months[state.mensual.selected].notes = monthlyNotesEl.value;
+  saveState();
+});
+
+/* ---------- habitos ---------- */
+var habitsListEl = document.getElementById("habits-list");
+var habitsAddEl = document.getElementById("habits-add");
+
+function renderHabits(){
+  var items = state.habitos.items;
+  if(!items.length){
+    habitsListEl.innerHTML = '<p class="empty-hint">No hay hábitos todavía. Agrega uno abajo.</p>';
+    renderInicioStats();
+    return;
+  }
+  var daysHeader = "";
+  for(var i = 0; i < 31; i++){ daysHeader += '<span class="habit-day-num">' + (i + 1) + "</span>"; }
+  var rows = items.map(function(h){
+    var days = h.days.map(function(done, i){
+      return '<button type="button" class="habit-day' + (done ? " is-done" : "") + '" data-day="' + i + '" aria-label="Día ' + (i + 1) + '"></button>';
+    }).join("");
+    return '<div class="habit-row" data-id="' + h.id + '">' +
+      '<input type="text" class="habit-name" value="' + escapeHtml(h.name) + '" placeholder="Nombre del hábito">' +
+      '<div class="habit-days">' + days + "</div>" +
+      '<button type="button" class="btn-icon habit-delete" aria-label="Eliminar hábito" title="Eliminar">✕</button>' +
+      "</div>";
+  }).join("");
+  habitsListEl.innerHTML =
+    '<div class="habit-table">' +
+    '<div class="habit-row habit-header"><span class="habit-name-label">Hábito</span><div class="habit-days">' + daysHeader + '</div><span class="habit-del-label"></span></div>' +
+    rows +
+    "</div>";
+  renderInicioStats();
+}
+
+habitsListEl.addEventListener("click", function(e){
+  var row = e.target.closest(".habit-row");
+  if(!row || !row.dataset.id) return;
+  var h = state.habitos.items.find(function(h){ return h.id === row.dataset.id; });
+  if(!h) return;
+  if(e.target.classList.contains("habit-delete")){
+    state.habitos.items = state.habitos.items.filter(function(x){ return x.id !== h.id; });
+    saveState();
+    renderHabits();
+  } else if(e.target.classList.contains("habit-day")){
+    var day = Number(e.target.dataset.day);
+    h.days[day] = !h.days[day];
+    e.target.classList.toggle("is-done", h.days[day]);
+    saveState();
+  }
+});
+habitsListEl.addEventListener("input", function(e){
+  if(!e.target.classList.contains("habit-name")) return;
+  var row = e.target.closest(".habit-row");
+  var h = state.habitos.items.find(function(h){ return h.id === row.dataset.id; });
+  if(h){ h.name = e.target.value; saveState(); }
+});
+habitsAddEl.addEventListener("click", function(){
+  var h = { id: uid(), name: "", days: new Array(31).fill(false) };
+  state.habitos.items.push(h);
+  saveState();
+  renderHabits();
+  requestAnimationFrame(function(){
+    var input = habitsListEl.querySelector('.habit-row[data-id="' + h.id + '"] .habit-name');
+    if(input) input.focus();
+  });
+});
+renderHabits();
+
+/* ---------- finanzas ---------- */
+var salaryInput = document.getElementById("salary-input");
+var expensesListEl = document.getElementById("expenses-list");
+var expensesAddEl = document.getElementById("expenses-add");
+
+function formatCurrency(n){
+  var v = Math.round((Number(n) || 0) * 100) / 100;
+  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function updateFinanceTotals(){
+  var ingresos = Number(state.finanzas.salary) || 0;
+  var gastos = state.finanzas.expenses.reduce(function(sum, x){ return sum + (Number(x.amount) || 0); }, 0);
+  var saldo = ingresos - gastos;
+  document.getElementById("total-ingresos").textContent = formatCurrency(ingresos);
+  document.getElementById("total-gastos").textContent = formatCurrency(gastos);
+  var saldoEl = document.getElementById("total-saldo");
+  saldoEl.textContent = formatCurrency(saldo);
+  saldoEl.classList.toggle("negative", saldo < 0);
+  renderInicioStats();
+}
+
+function renderExpenses(){
+  var list = state.finanzas.expenses;
+  if(!list.length){
+    expensesListEl.innerHTML = '<p class="empty-hint">No hay gastos todavía. Agrega uno abajo.</p>';
+  } else {
+    expensesListEl.innerHTML = list.map(function(x){
+      return '<div class="expense-row" data-id="' + x.id + '">' +
+        '<input type="text" class="expense-concept" value="' + escapeHtml(x.concept) + '" placeholder="Concepto (ej. Alquiler)">' +
+        '<input type="number" class="expense-amount" value="' + (Number(x.amount) || 0) + '" step="0.01" min="0" placeholder="0.00">' +
+        '<button type="button" class="btn-icon expense-delete" aria-label="Eliminar gasto" title="Eliminar">✕</button>' +
+        "</div>";
+    }).join("");
+  }
+  updateFinanceTotals();
+}
+
+salaryInput.value = state.finanzas.salary || "";
+salaryInput.addEventListener("input", function(){
+  state.finanzas.salary = parseFloat(salaryInput.value) || 0;
+  saveState();
+  updateFinanceTotals();
+});
+
+expensesListEl.addEventListener("click", function(e){
+  var row = e.target.closest(".expense-row");
+  if(!row || !e.target.classList.contains("expense-delete")) return;
+  state.finanzas.expenses = state.finanzas.expenses.filter(function(x){ return x.id !== row.dataset.id; });
+  saveState();
+  renderExpenses();
+});
+expensesListEl.addEventListener("input", function(e){
+  var row = e.target.closest(".expense-row");
+  if(!row) return;
+  var x = state.finanzas.expenses.find(function(x){ return x.id === row.dataset.id; });
+  if(!x) return;
+  if(e.target.classList.contains("expense-concept")){
+    x.concept = e.target.value;
+    saveState();
+  } else if(e.target.classList.contains("expense-amount")){
+    x.amount = parseFloat(e.target.value) || 0;
+    saveState();
+    updateFinanceTotals();
+  }
+});
+expensesAddEl.addEventListener("click", function(){
+  var x = { id: uid(), concept: "", amount: 0 };
+  state.finanzas.expenses.push(x);
+  saveState();
+  renderExpenses();
+  requestAnimationFrame(function(){
+    var input = expensesListEl.querySelector('.expense-row[data-id="' + x.id + '"] .expense-concept');
+    if(input) input.focus();
+  });
+});
+renderExpenses();
+
+/* ---------- inicio ---------- */
+function renderInicioStats(){
+  var pending = state.diario.tasks.filter(function(t){ return !t.done; }).length;
+  document.getElementById("stat-pending").textContent = pending;
+  document.getElementById("stat-habits").textContent = state.habitos.items.length;
+  var ingresos = Number(state.finanzas.salary) || 0;
+  var gastos = state.finanzas.expenses.reduce(function(sum, x){ return sum + (Number(x.amount) || 0); }, 0);
+  var balanceEl = document.getElementById("stat-balance");
+  balanceEl.textContent = formatCurrency(ingresos - gastos);
+  balanceEl.classList.toggle("negative", (ingresos - gastos) < 0);
+}
+function renderInicio(){
+  var today = new Date();
+  var label = today.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  document.getElementById("today-label").textContent = label;
+  document.getElementById("diario-date").textContent = label;
+  renderInicioStats();
+}
+
+/* ---------- routing ---------- */
+function showView(name){
+  if(VIEWS.indexOf(name) === -1) name = "inicio";
+  VIEWS.forEach(function(v){
+    var section = document.getElementById("view-" + v);
+    if(section) section.hidden = (v !== name);
+  });
+  document.querySelectorAll(".navlink").forEach(function(a){
+    a.classList.toggle("active", a.dataset.view === name);
+  });
+  if(name === "inicio") renderInicio();
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", function(){
+  showView(location.hash.replace("#", ""));
+});
+
+/* ---------- reset ---------- */
+document.getElementById("reset-btn").addEventListener("click", function(){
+  var ok = window.confirm("¿Seguro que quieres borrar todos los datos y empezar de cero? Esta acción no se puede deshacer.");
+  if(!ok) return;
+  clearTimeout(saveTimer);
+  window.removeEventListener("pagehide", saveNow);
+  document.removeEventListener("visibilitychange", flushOnHide);
+  state = defaultState();
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  location.hash = "";
+  location.reload();
+});
+
+/* ---------- init ---------- */
+showView(location.hash.replace("#", "") || "inicio");
+
+/* ---------- service worker (offline + instalable) ---------- */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(err){
+      console.warn("No se pudo registrar el service worker.", err);
+    });
+  });
+}
+
+})();
+</script>
+</body>
+</html>
