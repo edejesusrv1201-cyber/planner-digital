@@ -67,6 +67,7 @@ a{color:var(--color-accent-300);text-decoration:none}
 a:hover{color:var(--color-accent)}
 button{font-family:inherit}
 ::selection{background:var(--color-accent-800);color:var(--color-text)}
+[hidden]{display:none !important}
 
 /* layout */
 .app{display:flex;min-height:100vh}
@@ -108,7 +109,8 @@ button{font-family:inherit}
   margin-bottom:18px;
 }
 .card h2{font-size:14px;letter-spacing:.02em;color:var(--color-text);margin-bottom:14px}
-.day-subhead{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-faint);margin:18px 0 8px}
+.day-subhead{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-faint);margin:18px 0 8px;display:flex;align-items:center;gap:6px}
+.day-subhead svg{flex:none;opacity:.8}
 .day-subhead:first-of-type{margin-top:0}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .grid-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
@@ -129,7 +131,8 @@ button{font-family:inherit}
   background:var(--color-surface);border:1px solid var(--color-border);
   border-radius:var(--radius-md);padding:16px;
 }
-.stat .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-faint)}
+.stat .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-faint);display:flex;align-items:center;gap:6px}
+.stat .stat-label svg{flex:none;opacity:.8}
 .stat .stat-value{font-size:24px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums}
 .stat-value.negative{color:var(--color-danger)}
 .stat-value.accent{color:var(--color-accent-300)}
@@ -248,12 +251,14 @@ textarea{resize:vertical;min-height:80px;line-height:1.5}
 .sched-wrap{overflow-x:auto}
 .sched-grid{display:flex;flex-direction:column;gap:2px;min-width:660px}
 .sched-row{display:grid;grid-template-columns:76px repeat(7,1fr);gap:2px}
-.sched-head span{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-faint);text-align:center;padding:6px 2px}
+.sched-head span{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-faint);text-align:center;padding:6px 2px;border-radius:var(--radius-sm)}
+.sched-head span.is-today{color:var(--color-accent-300);font-weight:600;background:var(--color-accent-900)}
 .sched-time{font-size:10.5px;color:var(--color-text-muted);display:flex;align-items:center;padding:4px;font-variant-numeric:tabular-nums}
 .sched-cell{
   min-height:54px;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);
   display:flex;flex-direction:column;gap:3px;padding:3px;
 }
+.sched-cell.is-today-col{background:color-mix(in srgb, var(--color-accent) 8%, var(--color-surface-2));border-color:color-mix(in srgb, var(--color-accent) 30%, var(--color-border))}
 .class-chip{
   appearance:none;border:none;border-left:3px solid var(--chip-color);
   background:color-mix(in srgb, var(--chip-color) 24%, var(--color-surface-2));
@@ -276,9 +281,16 @@ textarea{resize:vertical;min-height:80px;line-height:1.5}
 .progress-fill{height:100%;width:0;background:var(--color-accent);border-radius:999px;transition:width .3s ease}
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .chart-wide{grid-column:1/-1}
-.chart-box{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.chart-box{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;position:relative}
 .chart-title{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-faint)}
-.chart-box canvas{width:100%;max-width:100%;display:block}
+.chart-box canvas{width:100%;max-width:100%;display:block;cursor:pointer}
+.chart-tooltip{
+  position:absolute;transform:translate(-50%,-100%);margin-top:-10px;
+  background:var(--color-surface-3);border:1px solid var(--color-border-strong);
+  border-radius:6px;padding:6px 10px;font-size:11.5px;line-height:1.4;color:var(--color-text);
+  white-space:nowrap;pointer-events:none;display:none;box-shadow:var(--shadow-md);z-index:5;
+}
+.chart-tooltip strong{font-weight:600}
 
 /* diario */
 .hoy-item{display:flex;align-items:center;gap:8px;font-size:14px;padding:6px 0}
@@ -333,12 +345,12 @@ body{padding-bottom:env(safe-area-inset-bottom)}
       <span class="brand-sub">Todo en uno</span>
     </div>
     <nav class="nav">
-      <a class="navlink" data-view="inicio" href="#inicio">Índice</a>
-      <a class="navlink" data-view="mensual" href="#mensual">Mensual</a>
-      <a class="navlink" data-view="horario" href="#horario">Horario</a>
-      <a class="navlink" data-view="diario" href="#diario">Diario</a>
-      <a class="navlink" data-view="habitos" href="#habitos">Hábitos</a>
-      <a class="navlink" data-view="finanzas" href="#finanzas">Finanzas</a>
+      <a class="navlink" data-view="inicio" href="#inicio"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"></rect><rect x="9" y="2" width="5" height="5" rx="1"></rect><rect x="2" y="9" width="5" height="5" rx="1"></rect><rect x="9" y="9" width="5" height="5" rx="1"></rect></svg>Índice</a>
+      <a class="navlink" data-view="mensual" href="#mensual"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"></rect><path d="M2 6.5h12"></path><path d="M5.5 1.5v3"></path><path d="M10.5 1.5v3"></path></svg>Mensual</a>
+      <a class="navlink" data-view="horario" href="#horario"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><path d="M8 4.7V8l2.6 1.6"></path></svg>Horario</a>
+      <a class="navlink" data-view="diario" href="#diario"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.6v2M8 12.4v2M1.6 8h2M12.4 8h2M3.8 3.8l1.4 1.4M10.8 10.8l1.4 1.4M3.8 12.2l1.4-1.4M10.8 5.2l1.4-1.4"></path></svg>Diario</a>
+      <a class="navlink" data-view="habitos" href="#habitos"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><circle cx="8" cy="8" r="2.8"></circle></svg>Hábitos</a>
+      <a class="navlink" data-view="finanzas" href="#finanzas"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.3v11.4"></path><path d="M10.4 4.6c0-1.1-1.1-1.9-2.4-1.9s-2.4.8-2.4 1.9 1 1.6 2.4 2c1.4.4 2.4 1 2.4 2s-1.1 1.9-2.4 1.9-2.4-.8-2.4-1.9"></path></svg>Finanzas</a>
     </nav>
     <div class="sidebar-footer">
       <button type="button" class="btn btn-danger" id="reset-btn">Borrar todo</button>
@@ -354,15 +366,15 @@ body{padding-bottom:env(safe-area-inset-bottom)}
       </div>
       <div class="stat-row">
         <div class="stat">
-          <div class="stat-label">Tareas pendientes hoy</div>
+          <div class="stat-label"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="4" height="4" rx="1"></rect><path d="M3 4.5l0.8 0.8L5.5 3.5"></path><path d="M8 4.5h6"></path><rect x="2" y="9.5" width="4" height="4" rx="1"></rect><path d="M8 11.5h6"></path></svg>Tareas pendientes hoy</div>
           <div class="stat-value" id="stat-pending">0</div>
         </div>
         <div class="stat">
-          <div class="stat-label">Hábitos activos</div>
+          <div class="stat-label"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><circle cx="8" cy="8" r="2.8"></circle></svg>Hábitos activos</div>
           <div class="stat-value" id="stat-habits">0</div>
         </div>
         <div class="stat">
-          <div class="stat-label">Saldo del mes</div>
+          <div class="stat-label"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><path d="M8 5v6M9.8 6.3c0-.8-.8-1.3-1.8-1.3s-1.8.5-1.8 1.2.7 1 1.8 1.3c1.1.3 1.8.6 1.8 1.3s-.8 1.2-1.8 1.2-1.8-.5-1.8-1.2"></path></svg>Saldo del mes</div>
           <div class="stat-value accent" id="stat-balance">$0.00</div>
         </div>
       </div>
@@ -414,18 +426,18 @@ body{padding-bottom:env(safe-area-inset-bottom)}
         <h2 id="day-panel-title">Día</h2>
         <div id="day-fixed" class="day-fixed-block" hidden></div>
 
-        <div class="day-subhead">Eventos</div>
+        <div class="day-subhead"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.6c-1.8 0-2.8 1.5-2.8 3.3v1.8l-1 2h7.6l-1-2V5.9c0-1.8-1-3.3-2.8-3.3Z"></path><path d="M6.6 11.7a1.4 1.4 0 0 0 2.8 0"></path></svg>Eventos</div>
         <div id="day-events"></div>
         <div class="list-actions"><button type="button" class="btn" id="day-event-add">+ Agregar evento</button></div>
 
-        <div class="day-subhead">Tareas del día</div>
+        <div class="day-subhead"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="2"></rect><path d="M5.3 8.1l1.8 1.8 3.6-4"></path></svg>Tareas del día</div>
         <div id="day-tasks"></div>
         <div class="list-actions"><button type="button" class="btn" id="day-task-add">+ Agregar tarea</button></div>
 
-        <div class="day-subhead">Hábitos</div>
+        <div class="day-subhead"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><circle cx="8" cy="8" r="2.8"></circle></svg>Hábitos</div>
         <div id="day-habits" class="day-habit-list"></div>
 
-        <div class="day-subhead">Notas</div>
+        <div class="day-subhead"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13v-2.6L10.4 3a1.5 1.5 0 0 1 2.1 2.1L5 12.5 3 13Z"></path></svg>Notas</div>
         <textarea id="day-notes" placeholder="Notas de este día..."></textarea>
       </div>
     </section>
@@ -562,9 +574,9 @@ body{padding-bottom:env(safe-area-inset-bottom)}
       <div class="card">
         <h2>Gráficas</h2>
         <div class="charts-grid">
-          <div class="chart-box"><span class="chart-title">Ingresos vs. gastos</span><canvas id="chart-bar"></canvas></div>
-          <div class="chart-box"><span class="chart-title">Gastos por categoría</span><canvas id="chart-pie"></canvas></div>
-          <div class="chart-box chart-wide"><span class="chart-title">Ahorro acumulado</span><canvas id="chart-line"></canvas></div>
+          <div class="chart-box"><span class="chart-title">Ingresos vs. gastos</span><canvas id="chart-bar"></canvas><div class="chart-tooltip" id="tooltip-bar"></div></div>
+          <div class="chart-box"><span class="chart-title">Gastos por categoría</span><canvas id="chart-pie"></canvas><div class="chart-tooltip" id="tooltip-pie"></div></div>
+          <div class="chart-box chart-wide"><span class="chart-title">Ahorro acumulado</span><canvas id="chart-line"></canvas><div class="chart-tooltip" id="tooltip-line"></div></div>
         </div>
       </div>
     </section>
@@ -1169,8 +1181,9 @@ function computeScheduleRows(){
 function renderSchedule(){
   var grid = document.getElementById("sched-grid");
   var rows = computeScheduleRows();
+  var todayIdx = (new Date().getDay() + 6) % 7;
   var html = '<div class="sched-row sched-head"><span class="sched-time"></span>' +
-    WEEKDAYS_ES.map(function(w){ return "<span>" + w.slice(0, 3) + "</span>"; }).join("") +
+    WEEKDAYS_ES.map(function(w, i){ return '<span class="' + (i === todayIdx ? "is-today" : "") + '">' + w.slice(0, 3) + "</span>"; }).join("") +
     "</div>";
   if(!rows.length){
     html += '<p class="empty-hint">No hay clases todavía. Agrega una abajo.</p>';
@@ -1179,7 +1192,7 @@ function renderSchedule(){
       html += '<div class="sched-row"><span class="sched-time">' + r.start + "–" + r.end + "</span>";
       for(var day = 0; day < 7; day++){
         var chips = state.horario.classes.filter(function(c){ return c.day === day && c.start === r.start && c.end === r.end; });
-        html += '<span class="sched-cell">' + chips.map(function(c){
+        html += '<span class="sched-cell' + (day === todayIdx ? " is-today-col" : "") + '">' + chips.map(function(c){
           return '<button type="button" class="class-chip" data-id="' + c.id + '" style="--chip-color:' + c.color + '">' +
             "<strong>" + escapeHtml(c.name) + "</strong>" +
             (c.room ? "<small>" + escapeHtml(c.room) + "</small>" : "") +
@@ -1246,6 +1259,8 @@ classDeleteBtn.addEventListener("click", function(){
 classCancelBtn.addEventListener("click", resetClassForm);
 
 /* ---------- gráficas (canvas nativo) ---------- */
+var chartGeometry = { bar: [], pie: [], line: [] };
+
 function setupHiDPICanvas(canvas, cssW, cssH){
   var dpr = window.devicePixelRatio || 1;
   canvas.width = Math.max(1, Math.round(cssW * dpr));
@@ -1267,38 +1282,133 @@ function roundRectPath(ctx, x, y, w, h, r){
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }
-function drawBarChart(canvas, items){
-  var cssW = canvas.parentElement.clientWidth || 260, cssH = 180;
-  var ctx = setupHiDPICanvas(canvas, cssW, cssH);
-  ctx.clearRect(0, 0, cssW, cssH);
-  var maxV = Math.max.apply(null, items.map(function(i){ return i.value; }).concat([1]));
-  var padding = 26, bottomPad = 24;
-  var chartH = cssH - padding - bottomPad;
-  var n = items.length;
-  var gap = 30;
-  var barW = Math.max(24, (cssW - gap * (n + 1)) / n);
-  ctx.font = "11px Inter, system-ui, sans-serif";
-  ctx.textAlign = "center";
-  items.forEach(function(it, i){
-    var h = maxV > 0 ? (it.value / maxV) * chartH : 0;
-    var x = gap + i * (barW + gap);
-    var y = padding + (chartH - h);
-    ctx.fillStyle = it.color;
-    roundRectPath(ctx, x, y, barW, h, 6);
-    ctx.fill();
-    ctx.fillStyle = "#e9e9ed";
-    ctx.fillText("$" + Math.round(it.value).toLocaleString("en-US"), x + barW / 2, Math.max(12, y - 8));
-    ctx.fillStyle = "#9397ab";
-    ctx.fillText(it.label, x + barW / 2, cssH - 8);
+function roundRectTop(ctx, x, y, w, h, r){
+  if(h <= 0 || w <= 0) return;
+  r = Math.min(r, w / 2, h);
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h);
+  ctx.closePath();
+}
+function niceCeil(v){
+  if(v <= 0) return 1;
+  var exp = Math.floor(Math.log(v) / Math.LN10);
+  var base = Math.pow(10, exp);
+  var n = v / base;
+  var nice = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+  return nice * base;
+}
+function shortMoney(v){
+  v = Math.round(v);
+  if(Math.abs(v) >= 1000) return "$" + (v / 1000).toFixed(v % 1000 === 0 ? 0 : 1) + "k";
+  return "$" + v;
+}
+function hexToRgb(hex){
+  hex = String(hex).replace("#", "");
+  if(hex.length === 3) hex = hex.split("").map(function(c){ return c + c; }).join("");
+  var num = parseInt(hex, 16) || 0;
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+function darkenColor(hex, amt){
+  var c = hexToRgb(hex);
+  return "rgb(" + Math.round(c.r * (1 - amt)) + "," + Math.round(c.g * (1 - amt)) + "," + Math.round(c.b * (1 - amt)) + ")";
+}
+
+function hideAllChartTooltips(){
+  ["bar", "pie", "line"].forEach(function(k){
+    var el = document.getElementById("tooltip-" + k);
+    if(el) el.style.display = "none";
   });
 }
-function drawPieChart(canvas, items){
-  var cssW = canvas.parentElement.clientWidth || 260, cssH = 200;
+function showChartTooltip(key, x, y, html){
+  var el = document.getElementById("tooltip-" + key);
+  if(!el) return;
+  el.innerHTML = html;
+  el.style.left = x + "px";
+  el.style.top = y + "px";
+  el.style.display = "block";
+}
+document.addEventListener("click", function(e){
+  if(e.target && (e.target.id === "chart-bar" || e.target.id === "chart-pie" || e.target.id === "chart-line")) return;
+  hideAllChartTooltips();
+});
+
+function drawBarChart(canvas, items){
+  var cssW = canvas.clientWidth || 260, cssH = 200;
   var ctx = setupHiDPICanvas(canvas, cssW, cssH);
   ctx.clearRect(0, 0, cssW, cssH);
+  chartGeometry.bar = [];
+
+  var maxV = Math.max.apply(null, items.map(function(i){ return i.value; }).concat([0]));
+  var niceMax = niceCeil(maxV || 1);
+  var leftPad = 50, rightPad = 10, topPad = 16, bottomPad = 26;
+  var chartW = cssW - leftPad - rightPad;
+  var chartH = cssH - topPad - bottomPad;
+
+  ctx.strokeStyle = "#2b2e3d";
+  ctx.lineWidth = 1;
+  ctx.font = "10px Inter, system-ui, sans-serif";
+  ctx.fillStyle = "#75798c";
+  ctx.textAlign = "right";
+  var steps = 4, g;
+  for(g = 0; g <= steps; g++){
+    var v = niceMax * (g / steps);
+    var gy = topPad + chartH - (v / niceMax) * chartH;
+    ctx.beginPath();
+    ctx.moveTo(leftPad, gy);
+    ctx.lineTo(leftPad + chartW, gy);
+    ctx.stroke();
+    ctx.fillText(shortMoney(v), leftPad - 8, gy + 3);
+  }
+
+  var n = items.length;
+  var barW = Math.min(70, Math.max(28, chartW / (n * 2.2)));
+  var usedGap = n > 0 ? (chartW - barW * n) / (n + 1) : 0;
+  ctx.textAlign = "center";
+  items.forEach(function(it, i){
+    var h = niceMax > 0 ? (it.value / niceMax) * chartH : 0;
+    var x = leftPad + usedGap + i * (barW + usedGap);
+    var y = topPad + (chartH - h);
+    if(h > 0){
+      var grad = ctx.createLinearGradient(0, y, 0, y + h);
+      grad.addColorStop(0, it.color);
+      grad.addColorStop(1, darkenColor(it.color, 0.35));
+      ctx.fillStyle = grad;
+      roundRectTop(ctx, x, y, barW, h, 7);
+      ctx.fill();
+    }
+    chartGeometry.bar.push({ x: x, y: y, w: barW, h: Math.max(h, 6), label: it.label, value: it.value });
+
+    ctx.fillStyle = "#e9e9ed";
+    ctx.font = "600 11px Inter, system-ui, sans-serif";
+    ctx.fillText(shortMoney(it.value), x + barW / 2, Math.max(topPad + 10, y - 8));
+    ctx.fillStyle = "#9397ab";
+    ctx.font = "10.5px Inter, system-ui, sans-serif";
+    ctx.fillText(it.label, x + barW / 2, topPad + chartH + 18);
+  });
+
+  ctx.strokeStyle = "#3f424d";
+  ctx.beginPath();
+  ctx.moveTo(leftPad, topPad + chartH);
+  ctx.lineTo(leftPad + chartW, topPad + chartH);
+  ctx.stroke();
+}
+
+function drawPieChart(canvas, items){
+  var cssW = canvas.clientWidth || 260, cssH = 220;
+  var ctx = setupHiDPICanvas(canvas, cssW, cssH);
+  ctx.clearRect(0, 0, cssW, cssH);
+  chartGeometry.pie = [];
+
   var total = items.reduce(function(s, i){ return s + i.value; }, 0);
-  var r = Math.min(58, cssH / 2 - 10);
-  var cx = r + 14, cy = cssH / 2;
+  var r = Math.min(72, cssH / 2 - 14);
+  var innerR = r * 0.6;
+  var cx = r + 16, cy = cssH / 2;
+
   if(total <= 0){
     ctx.fillStyle = "#75798c";
     ctx.font = "13px Inter, system-ui, sans-serif";
@@ -1306,80 +1416,179 @@ function drawPieChart(canvas, items){
     ctx.fillText("Sin gastos este mes", cssW / 2, cssH / 2);
     return;
   }
+
   var start = -Math.PI / 2;
   items.forEach(function(it){
     if(it.value <= 0) return;
     var slice = (it.value / total) * Math.PI * 2;
     ctx.beginPath();
-    ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, r, start, start + slice);
+    ctx.arc(cx, cy, innerR, start + slice, start, true);
     ctx.closePath();
     ctx.fillStyle = it.color;
     ctx.fill();
+    ctx.strokeStyle = "#161826";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    chartGeometry.pie.push({ cx: cx, cy: cy, rOuter: r, rInner: innerR, start: start, end: start + slice, label: it.label, value: it.value, pct: Math.round((it.value / total) * 100) });
     start += slice;
   });
+
+  ctx.fillStyle = "#e9e9ed";
+  ctx.font = "600 15px Inter, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(shortMoney(total), cx, cy - 2);
+  ctx.fillStyle = "#75798c";
+  ctx.font = "9px Inter, system-ui, sans-serif";
+  ctx.fillText("TOTAL", cx, cy + 12);
+
   var lx = cx + r + 22, ly = cy - r;
-  ctx.font = "11px Inter, system-ui, sans-serif";
   ctx.textAlign = "left";
   items.forEach(function(it){
     if(it.value <= 0) return;
-    ctx.fillStyle = it.color;
-    ctx.fillRect(lx, ly, 10, 10);
-    ctx.fillStyle = "#e9e9ed";
     var pct = Math.round((it.value / total) * 100);
-    ctx.fillText(it.label + " " + pct + "%", lx + 16, ly + 9);
-    ly += 18;
+    ctx.fillStyle = it.color;
+    roundRectPath(ctx, lx, ly, 10, 10, 3);
+    ctx.fill();
+    ctx.fillStyle = "#e9e9ed";
+    ctx.font = "11px Inter, system-ui, sans-serif";
+    ctx.fillText(it.label + "  " + pct + "%", lx + 16, ly + 9);
+    ly += 19;
   });
 }
+
+function buildSmoothPath(pts){
+  var path = new Path2D();
+  pts.forEach(function(p, i){
+    if(i === 0) path.moveTo(p.x, p.y);
+    else{
+      var prev = pts[i - 1];
+      path.quadraticCurveTo(prev.x, prev.y, (prev.x + p.x) / 2, (prev.y + p.y) / 2);
+    }
+  });
+  if(pts.length > 1) path.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+  return path;
+}
 function drawLineChart(canvas, labels, values){
-  var cssW = canvas.parentElement.clientWidth || 260, cssH = 180;
+  var cssW = canvas.clientWidth || 260, cssH = 200;
   var ctx = setupHiDPICanvas(canvas, cssW, cssH);
   ctx.clearRect(0, 0, cssW, cssH);
-  var padding = 20, bottomPad = 22, leftPad = 52;
-  var chartW = cssW - leftPad - 14;
-  var chartH = cssH - padding - bottomPad;
+  chartGeometry.line = [];
+
+  var leftPad = 50, rightPad = 10, topPad = 16, bottomPad = 24;
+  var chartW = cssW - leftPad - rightPad;
+  var chartH = cssH - topPad - bottomPad;
   var maxV = Math.max.apply(null, values.concat([0]));
-  var minV = Math.min.apply(null, values.concat([0]));
-  var range = (maxV - minV) || 1;
-  ctx.strokeStyle = "#3f424d";
+  var minV = Math.min(0, Math.min.apply(null, values));
+  var niceMax = niceCeil(maxV || 1);
+  var range = (niceMax - minV) || 1;
+
+  ctx.strokeStyle = "#2b2e3d";
   ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(leftPad, padding);
-  ctx.lineTo(leftPad, padding + chartH);
-  ctx.lineTo(leftPad + chartW, padding + chartH);
-  ctx.stroke();
-  ctx.fillStyle = "#75798c";
   ctx.font = "10px Inter, system-ui, sans-serif";
+  ctx.fillStyle = "#75798c";
   ctx.textAlign = "right";
-  ctx.fillText("$" + Math.round(maxV).toLocaleString("en-US"), leftPad - 6, padding + 4);
-  ctx.fillText("$" + Math.round(minV).toLocaleString("en-US"), leftPad - 6, padding + chartH);
+  var steps = 4, g;
+  for(g = 0; g <= steps; g++){
+    var v = minV + (range * g / steps);
+    var gy = topPad + chartH - ((v - minV) / range) * chartH;
+    ctx.beginPath();
+    ctx.moveTo(leftPad, gy);
+    ctx.lineTo(leftPad + chartW, gy);
+    ctx.stroke();
+    ctx.fillText(shortMoney(v), leftPad - 8, gy + 3);
+  }
 
   var n = values.length;
   var stepX = n > 1 ? chartW / (n - 1) : 0;
-  ctx.beginPath();
-  ctx.strokeStyle = "#9184d9";
-  ctx.lineWidth = 2;
-  values.forEach(function(v, i){
-    var x = leftPad + i * stepX;
-    var y = padding + chartH - ((v - minV) / range) * chartH;
-    if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  var pts = values.map(function(v, i){
+    return { x: leftPad + i * stepX, y: topPad + chartH - ((v - minV) / range) * chartH, v: v, label: labels[i] };
   });
-  ctx.stroke();
-  ctx.fillStyle = "#9184d9";
-  values.forEach(function(v, i){
-    var x = leftPad + i * stepX;
-    var y = padding + chartH - ((v - minV) / range) * chartH;
-    ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fill();
+
+  if(pts.length){
+    var linePath = buildSmoothPath(pts);
+    var grad = ctx.createLinearGradient(0, topPad, 0, topPad + chartH);
+    grad.addColorStop(0, "rgba(145,132,217,0.30)");
+    grad.addColorStop(1, "rgba(145,132,217,0)");
+    var fillPath = new Path2D(linePath);
+    fillPath.lineTo(pts[pts.length - 1].x, topPad + chartH);
+    fillPath.lineTo(pts[0].x, topPad + chartH);
+    fillPath.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill(fillPath);
+
+    ctx.strokeStyle = "#9184d9";
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.stroke(linePath);
+  }
+
+  pts.forEach(function(p){
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2); ctx.fillStyle = "#161826"; ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fillStyle = "#9184d9"; ctx.fill();
+    chartGeometry.line.push({ x: p.x, y: p.y, label: p.label, value: p.v });
   });
+
   ctx.fillStyle = "#75798c";
+  ctx.font = "10.5px Inter, system-ui, sans-serif";
   ctx.textAlign = "center";
-  labels.forEach(function(l, i){
-    var x = leftPad + i * stepX;
-    ctx.fillText(l, x, cssH - 6);
-  });
+  pts.forEach(function(p){ ctx.fillText(p.label, p.x, topPad + chartH + 18); });
+
+  ctx.strokeStyle = "#3f424d";
+  ctx.beginPath();
+  ctx.moveTo(leftPad, topPad + chartH);
+  ctx.lineTo(leftPad + chartW, topPad + chartH);
+  ctx.stroke();
 }
+
+(function initChartTooltips(){
+  var barCanvas = document.getElementById("chart-bar");
+  var pieCanvas = document.getElementById("chart-pie");
+  var lineCanvas = document.getElementById("chart-line");
+
+  barCanvas.addEventListener("click", function(e){
+    e.stopPropagation();
+    var rect = barCanvas.getBoundingClientRect();
+    var x = e.clientX - rect.left, y = e.clientY - rect.top;
+    var hit = chartGeometry.bar.find(function(b){ return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h; });
+    if(hit) showChartTooltip("bar", hit.x + hit.w / 2, hit.y, "<strong>" + escapeHtml(hit.label) + "</strong><br>" + formatCurrency(hit.value));
+    else hideAllChartTooltips();
+  });
+
+  pieCanvas.addEventListener("click", function(e){
+    e.stopPropagation();
+    var rect = pieCanvas.getBoundingClientRect();
+    var x = e.clientX - rect.left, y = e.clientY - rect.top;
+    var hit = chartGeometry.pie.find(function(sl){
+      var dx = x - sl.cx, dy = y - sl.cy;
+      var dist = Math.hypot(dx, dy);
+      if(dist < sl.rInner || dist > sl.rOuter) return false;
+      var twoPi = Math.PI * 2;
+      var norm = function(a){ a = (a + Math.PI / 2) % twoPi; if(a < 0) a += twoPi; return a; };
+      var ca = norm(Math.atan2(dy, dx));
+      var s = norm(sl.start), en = norm(sl.end);
+      if(en < s) en += twoPi;
+      if(ca < s) ca += twoPi;
+      return ca >= s && ca <= en;
+    });
+    if(hit) showChartTooltip("pie", x, y, "<strong>" + escapeHtml(hit.label) + "</strong><br>" + formatCurrency(hit.value) + " · " + hit.pct + "%");
+    else hideAllChartTooltips();
+  });
+
+  lineCanvas.addEventListener("click", function(e){
+    e.stopPropagation();
+    var rect = lineCanvas.getBoundingClientRect();
+    var x = e.clientX - rect.left, y = e.clientY - rect.top;
+    var nearest = null, nearestDist = 24;
+    chartGeometry.line.forEach(function(p){
+      var d = Math.hypot(x - p.x, y - p.y);
+      if(d < nearestDist){ nearestDist = d; nearest = p; }
+    });
+    if(nearest) showChartTooltip("line", nearest.x, nearest.y, "<strong>" + escapeHtml(nearest.label) + "</strong><br>" + formatCurrency(nearest.value));
+    else hideAllChartTooltips();
+  });
+})();
 
 /* ---------- finanzas ---------- */
 function categoryOptions(selected){
@@ -1517,6 +1726,7 @@ savingsGoalInput.addEventListener("input", function(){
 });
 
 function renderFinanceCharts(fin, year, month){
+  hideAllChartTooltips();
   drawBarChart(document.getElementById("chart-bar"), [
     { label: "Ingresos", value: fin.salary, color: "#9184d9" },
     { label: "Gastos", value: fin.totalExpenses, color: "#d8a97f" }

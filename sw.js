@@ -1,4 +1,4 @@
-var CACHE_NAME = "planner-digital-v3";
+var CACHE_NAME = "planner-digital-v5";
 var APP_SHELL = [
   "./",
   "./index.html",
