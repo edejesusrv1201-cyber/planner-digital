@@ -14,8 +14,11 @@
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="icons/favicon-16.png" sizes="16x16" type="image/png">
 
-<!-- PWA: iOS / Safari "Agregar a inicio" -->
+<!-- PWA: iOS / Safari "Agregar a inicio" (iPhone y iPad) -->
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Planner Digital">
@@ -172,6 +175,9 @@ input[type=text],input[type=number],input[type=time],textarea,select{
   width:100%;
 }
 input[type=color]{padding:2px;height:38px;width:100%;cursor:pointer;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-sm)}
+.time24{display:flex;align-items:center;gap:6px}
+.time24 select{width:auto;flex:1;min-width:0;font-variant-numeric:tabular-nums;text-align:center}
+.time24-sep{color:var(--color-text-faint);font-weight:600;flex:none}
 input[type=text]::placeholder,textarea::placeholder{color:var(--color-text-faint)}
 input[type=checkbox]{accent-color:var(--color-accent);width:18px;height:18px;flex:none;cursor:pointer}
 textarea{resize:vertical;min-height:80px;line-height:1.5}
@@ -186,6 +192,12 @@ textarea{resize:vertical;min-height:80px;line-height:1.5}
 .task-text:hover{background:var(--color-surface-2)}
 .task-text:focus{background:var(--color-surface-2);border-color:var(--color-border)}
 .task-text.is-done{color:var(--color-text-faint);text-decoration:line-through}
+.day-task-row .task-subject{flex:0 0 130px;width:130px;font-size:13px}
+@media (max-width:480px){
+  .day-task-row{flex-wrap:wrap}
+  .day-task-row .task-subject{flex:1 1 100%;order:3;width:auto}
+  .day-task-row .task-text{order:2}
+}
 .empty-hint{color:var(--color-text-faint);font-size:13px;padding:10px 0}
 .list-actions{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap}
 
@@ -213,13 +225,16 @@ textarea{resize:vertical;min-height:80px;line-height:1.5}
 }
 .cal-day:hover{border-color:var(--color-accent)}
 .cal-day.is-empty{visibility:hidden;cursor:default}
-.cal-day.is-today{border-color:var(--color-accent);color:var(--color-accent-300);font-weight:600}
 .cal-day.is-selected{background:var(--color-accent-900);border-color:var(--color-accent)}
+.cal-day.is-today{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-bg);font-weight:700}
+.cal-day.is-today:hover{background:var(--color-accent-600);border-color:var(--color-accent-600)}
+.cal-day.is-today.is-selected{outline:2px solid var(--color-accent-300);outline-offset:2px}
 .cal-day .dot{width:5px;height:5px;border-radius:50%;background:var(--color-accent)}
+.cal-day.is-today .dot{background:var(--color-bg)}
 .event-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--color-border)}
 .event-row:last-child{border-bottom:none}
 .event-row .event-text{flex:1;min-width:0}
-.event-row .event-time{width:110px;flex:none}
+.event-row .time24{flex:none;width:132px}
 .day-fixed-block{
   background:var(--color-accent-900);border-left:2px solid var(--color-accent);
   border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;
@@ -305,6 +320,9 @@ textarea{resize:vertical;min-height:80px;line-height:1.5}
 .notif-status{font-size:12px}
 .notif-status.granted{color:var(--color-accent-300)}
 .notif-status.denied{color:var(--color-danger)}
+.sync-code-field{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.03em;color:var(--color-accent-300);font-size:13px}
+.sync-status-ok{color:var(--color-accent-300)}
+.sync-status-warn{color:var(--color-danger)}
 
 footer.appfoot{padding:20px 32px 40px;color:var(--color-text-faint);font-size:12px}
 
@@ -399,8 +417,38 @@ body{padding-bottom:env(safe-area-inset-bottom)}
           </div>
         </div>
         <div class="field">
-          <label for="daily-check-time">Avisarme si quedan tareas o hábitos de hoy sin marcar, a las</label>
-          <input type="time" id="daily-check-time">
+          <label>Avisarme si quedan tareas o hábitos de hoy sin marcar, a las (24 hrs)</label>
+          <div class="time24"><select id="daily-check-hour" aria-label="Hora"></select><span class="time24-sep">:</span><select id="daily-check-min" aria-label="Minutos"></select></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Sincronización entre dispositivos</h2>
+        <div class="meta" id="sync-status" style="margin-bottom:12px"></div>
+        <div id="sync-setup">
+          <p class="empty-hint" style="margin-bottom:12px">Sincroniza tus datos entre tu celular y tablet usando un código secreto — no necesitas cuenta ni contraseña.</p>
+          <div class="list-actions">
+            <button type="button" class="btn" id="sync-generate-btn">Generar código nuevo</button>
+          </div>
+          <div class="field" style="margin-top:14px">
+            <label for="sync-code-input">¿Ya tienes un código de otro dispositivo?</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="sync-code-input" placeholder="Pega el código aquí">
+              <button type="button" class="btn btn-secondary" id="sync-join-btn">Conectar</button>
+            </div>
+          </div>
+        </div>
+        <div id="sync-active" hidden>
+          <div class="field">
+            <label for="sync-code-display">Tu código de sincronización</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="sync-code-display" class="sync-code-field" readonly>
+              <button type="button" class="btn-icon" id="sync-copy-btn" aria-label="Copiar código" title="Copiar">⧉</button>
+            </div>
+          </div>
+          <p class="empty-hint">Ingresa este mismo código en tus otros dispositivos para compartir los datos entre todos.</p>
+          <div class="list-actions">
+            <button type="button" class="btn btn-danger" id="sync-disable-btn">Desactivar en este dispositivo</button>
+          </div>
         </div>
       </div>
     </section>
@@ -469,8 +517,8 @@ body{padding-bottom:env(safe-area-inset-bottom)}
           <div class="field"><label for="class-color">Color</label><input type="color" id="class-color" value="#7fb88a"></div>
         </div>
         <div class="grid-2">
-          <div class="field"><label for="class-start">Hora inicio</label><input type="time" id="class-start"></div>
-          <div class="field"><label for="class-end">Hora fin</label><input type="time" id="class-end"></div>
+          <div class="field"><label>Hora inicio (24 hrs)</label><div class="time24"><select id="class-start-h" aria-label="Hora inicio"></select><span class="time24-sep">:</span><select id="class-start-m" aria-label="Minutos inicio"></select></div></div>
+          <div class="field"><label>Hora fin (24 hrs)</label><div class="time24"><select id="class-end-h" aria-label="Hora fin"></select><span class="time24-sep">:</span><select id="class-end-m" aria-label="Minutos fin"></select></div></div>
         </div>
         <div class="field">
           <label class="field-inline"><input type="checkbox" id="class-lab"> Marcar como laboratorio (L)</label>
@@ -585,9 +633,30 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 </div>
 <footer class="appfoot">Los datos se guardan automáticamente en este navegador (localStorage).</footer>
 
+<!-- Sincronización entre dispositivos: SDK de Firebase (compat, sin módulos).
+     Si esta app no está conectada a un proyecto de Firebase, estos scripts
+     igual cargan pero la app simplemente no activa la sincronización. -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
 <script>
 (function(){
 "use strict";
+
+/* ======================================================================
+   CONFIGURACIÓN DE FIREBASE — reemplaza estos valores por los de TU
+   propio proyecto gratuito de Firebase (console.firebase.google.com).
+   Mientras digan "TU_", la sincronización queda desactivada y el resto
+   de la app funciona exactamente igual, 100% local.
+   ====================================================================== */
+var FIREBASE_CONFIG = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_PROYECTO.firebaseapp.com",
+  projectId: "TU_PROYECTO",
+  storageBucket: "TU_PROYECTO.appspot.com",
+  messagingSenderId: "TU_SENDER_ID",
+  appId: "TU_APP_ID"
+};
 
 var STORAGE_KEY = "plannerDigitalTodoEnUno_v1";
 var VIEWS = ["inicio","mensual","horario","diario","habitos","finanzas"];
@@ -613,6 +682,46 @@ function isoDate(year, monthIndex, day){ return year + "-" + pad2(monthIndex + 1
 function formatCurrency(n){
   var v = Math.round((Number(n) || 0) * 100) / 100;
   return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/* ---------- selector de hora en 24h (dos <select>, sin AM/PM) ---------- */
+function hourOptionsHtml(selected){
+  var html = "";
+  for(var h = 0; h < 24; h++){
+    var hh = pad2(h);
+    html += '<option value="' + hh + '"' + (hh === selected ? " selected" : "") + '>' + hh + "</option>";
+  }
+  return html;
+}
+function minuteOptionsHtml(selected){
+  var html = "";
+  for(var m = 0; m < 60; m += 5){
+    var mm = pad2(m);
+    html += '<option value="' + mm + '"' + (mm === selected ? " selected" : "") + '>' + mm + "</option>";
+  }
+  return html;
+}
+function fillTime24Select(hourSelectEl, minSelectEl, value, allowEmpty){
+  var parts = (value || "").split(":");
+  var h = parts[0] || "", m = parts[1] || "";
+  hourSelectEl.innerHTML = (allowEmpty ? '<option value="">--</option>' : "") + hourOptionsHtml(h);
+  minSelectEl.innerHTML = (allowEmpty ? '<option value="">--</option>' : "") + minuteOptionsHtml(m);
+  if(h) hourSelectEl.value = h;
+  if(m) minSelectEl.value = m;
+}
+function readTime24Select(hourSelectEl, minSelectEl){
+  var h = hourSelectEl.value, m = minSelectEl.value;
+  if(!h || !m) return "";
+  return h + ":" + m;
+}
+function time24RowHtml(cls, value){
+  var parts = (value || "").split(":");
+  var h = parts[0] || "", m = parts[1] || "";
+  return '<div class="time24">' +
+    '<select class="' + cls + '-h" aria-label="Hora"><option value="">--</option>' + hourOptionsHtml(h) + "</select>" +
+    '<span class="time24-sep">:</span>' +
+    '<select class="' + cls + '-m" aria-label="Minutos"><option value="">--</option>' + minuteOptionsHtml(m) + "</select>" +
+    "</div>";
 }
 
 function defaultClasses(){
@@ -652,12 +761,9 @@ function defaultState(){
   };
 }
 
-function loadState(){
+function mergeIntoDefaultState(parsed){
   var base = defaultState();
   try{
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return base;
-    var parsed = JSON.parse(raw);
     if(!parsed || typeof parsed !== "object") return base;
 
     if(parsed.diario){
@@ -735,8 +841,18 @@ function loadState(){
 
     return base;
   }catch(e){
-    console.warn("No se pudo leer lo guardado, se usan valores por defecto.", e);
+    console.warn("No se pudo combinar el estado recibido, se usan valores por defecto.", e);
     return base;
+  }
+}
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    return mergeIntoDefaultState(JSON.parse(raw));
+  }catch(e){
+    console.warn("No se pudo leer lo guardado, se usan valores por defecto.", e);
+    return defaultState();
   }
 }
 
@@ -750,6 +866,7 @@ function saveNow(){
   clearTimeout(saveTimer);
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   catch(e){ console.error("No se pudo guardar en localStorage.", e); }
+  if(typeof pushToCloud === "function" && syncCode && !applyingRemoteUpdate) pushToCloud();
 }
 function flushOnHide(){
   if(document.visibilityState === "hidden") saveNow();
@@ -768,6 +885,7 @@ function getDayData(year, monthIndex, day){
   };
 }
 function ensureDayData(year, monthIndex, day){
+  if(day === null || day === undefined) return { events: [], tasks: [], notes: "" };
   var mk = monthKey(year, monthIndex);
   if(!state.calendario[mk]) state.calendario[mk] = { days: {} };
   if(!state.calendario[mk].days[day]) state.calendario[mk].days[day] = { events: [], tasks: [], notes: "" };
@@ -870,7 +988,7 @@ function setupTaskList(containerEl, addBtnEl, getTasks, onAfterChange){
 }
 
 /* ---------- diario: tareas rápidas ---------- */
-setupTaskList(
+var renderQuickTasks = setupTaskList(
   document.getElementById("diario-tasks"),
   document.getElementById("diario-add"),
   function(){ return state.diario.quickTasks; },
@@ -967,7 +1085,7 @@ function renderDayEvents(){
   container.innerHTML = events.map(function(ev){
     return '<div class="event-row" data-id="' + ev.id + '">' +
       '<input type="text" class="event-text" value="' + escapeHtml(ev.text) + '" placeholder="Ej. Parcial de Estructuras">' +
-      '<input type="time" class="event-time" value="' + escapeHtml(ev.time || "") + '" aria-label="Hora del recordatorio">' +
+      time24RowHtml("event-time", ev.time) +
       '<button type="button" class="btn-icon event-delete" aria-label="Eliminar evento" title="Eliminar">✕</button>' +
       "</div>";
   }).join("");
@@ -994,18 +1112,26 @@ function renderDayPanel(){
   document.getElementById("day-panel-title").textContent = label.charAt(0).toUpperCase() + label.slice(1);
   renderDayFixed();
   renderDayEvents();
+  renderDayTasksList();
   renderDayHabits();
   document.getElementById("day-notes").value = getDayData(state.mensual.selectedYear, state.mensual.selected, calSelectedDay).notes;
 }
 
 document.getElementById("day-events").addEventListener("input", function(e){
+  if(!e.target.classList.contains("event-text")) return;
   var row = e.target.closest(".event-row");
-  if(!row) return;
+  var events = ensureDayData(state.mensual.selectedYear, state.mensual.selected, calSelectedDay).events;
+  var ev = events.find(function(x){ return x.id === row.dataset.id; });
+  if(ev){ ev.text = e.target.value; saveState(); }
+});
+document.getElementById("day-events").addEventListener("change", function(e){
+  if(!e.target.classList.contains("event-time-h") && !e.target.classList.contains("event-time-m")) return;
+  var row = e.target.closest(".event-row");
   var events = ensureDayData(state.mensual.selectedYear, state.mensual.selected, calSelectedDay).events;
   var ev = events.find(function(x){ return x.id === row.dataset.id; });
   if(!ev) return;
-  if(e.target.classList.contains("event-text")){ ev.text = e.target.value; saveState(); }
-  else if(e.target.classList.contains("event-time")){ ev.time = e.target.value; saveState(); }
+  ev.time = readTime24Select(row.querySelector(".event-time-h"), row.querySelector(".event-time-m"));
+  saveState();
 });
 document.getElementById("day-events").addEventListener("click", function(e){
   if(!e.target.classList.contains("event-delete")) return;
@@ -1031,12 +1157,93 @@ document.getElementById("day-event-add").addEventListener("click", function(){
   });
 });
 
-setupTaskList(
-  document.getElementById("day-tasks"),
-  document.getElementById("day-task-add"),
-  function(){ return ensureDayData(state.mensual.selectedYear, state.mensual.selected, calSelectedDay).tasks; },
-  function(){ renderCalendar(); renderInicioStats(); renderTodaySummary(); }
-);
+function getSubjectNames(){
+  var seen = {};
+  var names = [];
+  state.horario.classes.forEach(function(c){
+    if(c.name && !seen[c.name]){ seen[c.name] = true; names.push(c.name); }
+  });
+  return names;
+}
+function subjectOptionsHtml(selected){
+  var opts = '<option value=""' + (!selected ? " selected" : "") + ">Sin materia</option>";
+  getSubjectNames().forEach(function(n){
+    opts += '<option value="' + escapeHtml(n) + '"' + (n === selected ? " selected" : "") + ">" + escapeHtml(n) + "</option>";
+  });
+  return opts;
+}
+var dayTasksEl = document.getElementById("day-tasks");
+var dayTaskAddEl = document.getElementById("day-task-add");
+
+function renderDayTasksList(){
+  var tasks = ensureDayData(state.mensual.selectedYear, state.mensual.selected, calSelectedDay).tasks;
+  if(!tasks.length){
+    dayTasksEl.innerHTML = '<p class="empty-hint">No hay tareas todavía. Agrega una abajo.</p>';
+    return;
+  }
+  dayTasksEl.innerHTML = tasks.map(function(t){
+    return '<div class="task-row day-task-row" data-id="' + t.id + '">' +
+      '<input type="checkbox" class="task-check"' + (t.done ? " checked" : "") + ' aria-label="Marcar tarea completada">' +
+      '<select class="task-subject" aria-label="Materia">' + subjectOptionsHtml(t.subject) + "</select>" +
+      '<input type="text" class="task-text' + (t.done ? " is-done" : "") + '" value="' + escapeHtml(t.text) + '" placeholder="Comentario (ej. Tengo parcial)">' +
+      '<button type="button" class="btn-icon task-delete" aria-label="Eliminar tarea" title="Eliminar">✕</button>' +
+      "</div>";
+  }).join("");
+}
+dayTasksEl.addEventListener("click", function(e){
+  var row = e.target.closest(".day-task-row");
+  if(!row) return;
+  var tasks = ensureDayData(state.mensual.selectedYear, state.mensual.selected, calSelectedDay).tasks;
+  var idx = tasks.findIndex(function(t){ return t.id === row.dataset.id; });
+  if(idx === -1) return;
+  if(e.target.classList.contains("task-delete")){
+    tasks.splice(idx, 1);
+    saveState();
+    renderDayTasksList();
+    renderCalendar();
+    renderInicioStats();
+    renderTodaySummary();
+    renderDiarioHoy();
+  } else if(e.target.classList.contains("task-check")){
+    tasks[idx].done = e.target.checked;
+    var textEl = row.querySelector(".task-text");
+    if(textEl) textEl.classList.toggle("is-done", tasks[idx].done);
+    saveState();
+    renderCalendar();
+    renderInicioStats();
+    renderTodaySummary();
+    renderDiarioHoy();
+  }
+});
+dayTasksEl.addEventListener("input", function(e){
+  if(!e.target.classList.contains("task-text")) return;
+  var row = e.target.closest(".day-task-row");
+  var tasks = ensureDayData(state.mensual.selectedYear, state.mensual.selected, calSelectedDay).tasks;
+  var t = tasks.find(function(x){ return x.id === row.dataset.id; });
+  if(t){ t.text = e.target.value; saveState(); }
+});
+dayTasksEl.addEventListener("change", function(e){
+  if(!e.target.classList.contains("task-subject")) return;
+  var row = e.target.closest(".day-task-row");
+  var tasks = ensureDayData(state.mensual.selectedYear, state.mensual.selected, calSelectedDay).tasks;
+  var t = tasks.find(function(x){ return x.id === row.dataset.id; });
+  if(t){ t.subject = e.target.value; saveState(); renderTodaySummary(); renderDiarioHoy(); }
+});
+dayTaskAddEl.addEventListener("click", function(){
+  var tasks = ensureDayData(state.mensual.selectedYear, state.mensual.selected, calSelectedDay).tasks;
+  var t = { id: uid(), text: "", done: false, subject: "" };
+  tasks.push(t);
+  saveState();
+  renderDayTasksList();
+  renderCalendar();
+  renderInicioStats();
+  renderTodaySummary();
+  requestAnimationFrame(function(){
+    var input = dayTasksEl.querySelector('.day-task-row[data-id="' + t.id + '"] .task-text');
+    if(input) input.focus();
+  });
+});
+renderDayTasksList();
 
 document.getElementById("day-habits").addEventListener("change", function(e){
   if(!e.target.classList.contains("day-habit-check")) return;
@@ -1143,8 +1350,10 @@ var classNameInput = document.getElementById("class-name");
 var classRoomInput = document.getElementById("class-room");
 var classDaySelect = document.getElementById("class-day");
 var classColorInput = document.getElementById("class-color");
-var classStartInput = document.getElementById("class-start");
-var classEndInput = document.getElementById("class-end");
+var classStartHourEl = document.getElementById("class-start-h");
+var classStartMinEl = document.getElementById("class-start-m");
+var classEndHourEl = document.getElementById("class-end-h");
+var classEndMinEl = document.getElementById("class-end-m");
 var classLabInput = document.getElementById("class-lab");
 var classSaveBtn = document.getElementById("class-save");
 var classDeleteBtn = document.getElementById("class-delete");
@@ -1159,49 +1368,40 @@ function resetClassForm(){
   classRoomInput.value = "";
   classDaySelect.value = "0";
   classColorInput.value = "#7fb88a";
-  classStartInput.value = "";
-  classEndInput.value = "";
+  fillTime24Select(classStartHourEl, classStartMinEl, "", true);
+  fillTime24Select(classEndHourEl, classEndMinEl, "", true);
   classLabInput.checked = false;
   classSaveBtn.textContent = "Agregar clase";
   classDeleteBtn.hidden = true;
   classCancelBtn.hidden = true;
 }
 
-function computeScheduleRows(){
-  var seen = {};
-  var rows = [];
-  state.horario.classes.forEach(function(c){
-    var key = c.start + "-" + c.end;
-    if(!seen[key]){ seen[key] = true; rows.push({ start: c.start, end: c.end }); }
-  });
-  rows.sort(function(a, b){ return a.start.localeCompare(b.start); });
-  return rows;
+function classStartHour(c){
+  return parseInt((c.start || "0").split(":")[0], 10) || 0;
 }
 
 function renderSchedule(){
   var grid = document.getElementById("sched-grid");
-  var rows = computeScheduleRows();
   var todayIdx = (new Date().getDay() + 6) % 7;
   var html = '<div class="sched-row sched-head"><span class="sched-time"></span>' +
     WEEKDAYS_ES.map(function(w, i){ return '<span class="' + (i === todayIdx ? "is-today" : "") + '">' + w.slice(0, 3) + "</span>"; }).join("") +
     "</div>";
-  if(!rows.length){
-    html += '<p class="empty-hint">No hay clases todavía. Agrega una abajo.</p>';
-  } else {
-    rows.forEach(function(r){
-      html += '<div class="sched-row"><span class="sched-time">' + r.start + "–" + r.end + "</span>";
-      for(var day = 0; day < 7; day++){
-        var chips = state.horario.classes.filter(function(c){ return c.day === day && c.start === r.start && c.end === r.end; });
-        html += '<span class="sched-cell' + (day === todayIdx ? " is-today-col" : "") + '">' + chips.map(function(c){
-          return '<button type="button" class="class-chip" data-id="' + c.id + '" style="--chip-color:' + c.color + '">' +
-            "<strong>" + escapeHtml(c.name) + "</strong>" +
-            (c.room ? "<small>" + escapeHtml(c.room) + "</small>" : "") +
-            (c.label ? '<span class="chip-tag">' + escapeHtml(c.label) + "</span>" : "") +
-            "</button>";
-        }).join("") + "</span>";
-      }
-      html += "</div>";
-    });
+  if(!state.horario.classes.length){
+    html += '<p class="empty-hint" style="margin:8px 0">No hay clases todavía. Agrega una abajo — puedes elegir cualquier hora del día o de la noche.</p>';
+  }
+  for(var hour = 0; hour < 24; hour++){
+    html += '<div class="sched-row"><span class="sched-time">' + pad2(hour) + ":00</span>";
+    for(var day = 0; day < 7; day++){
+      var chips = state.horario.classes.filter(function(c){ return c.day === day && classStartHour(c) === hour; });
+      html += '<span class="sched-cell' + (day === todayIdx ? " is-today-col" : "") + '">' + chips.map(function(c){
+        return '<button type="button" class="class-chip" data-id="' + c.id + '" style="--chip-color:' + c.color + '">' +
+          "<strong>" + escapeHtml(c.name) + "</strong>" +
+          "<small>" + escapeHtml(c.start) + "–" + escapeHtml(c.end) + (c.room ? " · " + escapeHtml(c.room) : "") + "</small>" +
+          (c.label ? '<span class="chip-tag">' + escapeHtml(c.label) + "</span>" : "") +
+          "</button>";
+      }).join("") + "</span>";
+    }
+    html += "</div>";
   }
   grid.innerHTML = html;
   grid.querySelectorAll(".class-chip").forEach(function(btn){
@@ -1214,8 +1414,8 @@ function renderSchedule(){
       classRoomInput.value = c.room;
       classDaySelect.value = String(c.day);
       classColorInput.value = c.color;
-      classStartInput.value = c.start;
-      classEndInput.value = c.end;
+      fillTime24Select(classStartHourEl, classStartMinEl, c.start, true);
+      fillTime24Select(classEndHourEl, classEndMinEl, c.end, true);
       classLabInput.checked = c.label === "L";
       classSaveBtn.textContent = "Guardar cambios";
       classDeleteBtn.hidden = false;
@@ -1227,8 +1427,8 @@ function renderSchedule(){
 
 classSaveBtn.addEventListener("click", function(){
   var name = classNameInput.value.trim();
-  var start = classStartInput.value;
-  var end = classEndInput.value;
+  var start = readTime24Select(classStartHourEl, classStartMinEl);
+  var end = readTime24Select(classEndHourEl, classEndMinEl);
   if(!name || !start || !end){
     window.alert("Completa al menos materia, hora de inicio y hora de fin.");
     return;
@@ -1816,7 +2016,8 @@ function renderDiarioHoy(){
 
   var taskHtml = data.tasks.length
     ? data.tasks.map(function(t){
-        return '<label class="hoy-check-row"><input type="checkbox" class="hoy-task-check" data-id="' + t.id + '"' + (t.done ? " checked" : "") + '><span' + (t.done ? ' class="is-done"' : "") + ">" + escapeHtml(t.text || "(sin título)") + "</span></label>";
+        var label = (t.subject ? t.subject + ": " : "") + (t.text || "(sin título)");
+        return '<label class="hoy-check-row"><input type="checkbox" class="hoy-task-check" data-id="' + t.id + '"' + (t.done ? " checked" : "") + '><span' + (t.done ? ' class="is-done"' : "") + ">" + escapeHtml(label) + "</span></label>";
       }).join("")
     : '<p class="empty-hint">Sin tareas agendadas para hoy.</p>';
   document.getElementById("hoy-tasks").innerHTML = taskHtml;
@@ -1929,12 +2130,15 @@ document.getElementById("notif-permission-btn").addEventListener("click", functi
   if(!("Notification" in window)) return;
   Notification.requestPermission().then(function(){ updateNotifPermissionUI(); });
 });
-var dailyCheckInput = document.getElementById("daily-check-time");
-dailyCheckInput.value = state.reminders.dailyCheckTime || "20:00";
-dailyCheckInput.addEventListener("input", function(){
-  state.reminders.dailyCheckTime = dailyCheckInput.value;
+var dailyCheckHourEl = document.getElementById("daily-check-hour");
+var dailyCheckMinEl = document.getElementById("daily-check-min");
+fillTime24Select(dailyCheckHourEl, dailyCheckMinEl, state.reminders.dailyCheckTime || "20:00", false);
+function onDailyCheckTimeChange(){
+  state.reminders.dailyCheckTime = readTime24Select(dailyCheckHourEl, dailyCheckMinEl) || "20:00";
   saveState();
-});
+}
+dailyCheckHourEl.addEventListener("change", onDailyCheckTimeChange);
+dailyCheckMinEl.addEventListener("change", onDailyCheckTimeChange);
 function showLocalNotification(title, body, tag){
   if(!("Notification" in window) || Notification.permission !== "granted") return;
   if(!("serviceWorker" in navigator)) return;
@@ -1992,6 +2196,177 @@ document.addEventListener("visibilitychange", function(){
     if(!document.getElementById("view-diario").hidden) renderDiarioHoy();
   }
 });
+
+/* ---------- sincronización en la nube ---------- */
+var DEVICE_ID_KEY = "plannerDeviceId_v1";
+var SYNC_CODE_KEY = "plannerSyncCode_v1";
+function getOrCreateDeviceId(){
+  var id = null;
+  try{ id = localStorage.getItem(DEVICE_ID_KEY); }catch(e){}
+  if(!id){
+    id = "dev-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+    try{ localStorage.setItem(DEVICE_ID_KEY, id); }catch(e){}
+  }
+  return id;
+}
+function generateSyncCode(){
+  var chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  var code = "";
+  for(var i = 0; i < 24; i++){ code += chars.charAt(Math.floor(Math.random() * chars.length)); }
+  return code;
+}
+
+var deviceId = getOrCreateDeviceId();
+var db = null;
+var firebaseReady = false;
+try{
+  if(typeof firebase !== "undefined" && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf("TU_") !== 0){
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    try{ db.enablePersistence({ synchronizeTabs: true }); }catch(e){ /* modo privado o varias pestañas: seguimos sin caché offline propio de Firestore */ }
+    firebaseReady = true;
+  }
+}catch(e){
+  console.warn("No se pudo inicializar Firebase.", e);
+}
+
+var syncCode = null;
+try{ syncCode = localStorage.getItem(SYNC_CODE_KEY); }catch(e){}
+var syncUnsub = null;
+var lastPushedAt = 0;
+var lastAppliedRemoteAt = 0;
+var applyingRemoteUpdate = false;
+
+function rerenderEverything(){
+  renderMonthTabs();
+  renderCalendar();
+  renderDayPanel();
+  if(renderDayTasksList) renderDayTasksList();
+  renderHabits();
+  renderSchedule();
+  renderFixedExpenses();
+  renderExpenses();
+  refreshFinanceView();
+  renderInicio();
+  renderDiarioHoy();
+  if(renderQuickTasks) renderQuickTasks();
+  fillTime24Select(dailyCheckHourEl, dailyCheckMinEl, state.reminders.dailyCheckTime || "20:00", false);
+}
+
+function updateSyncUI(statusText, statusClass){
+  var statusEl = document.getElementById("sync-status");
+  var setupEl = document.getElementById("sync-setup");
+  var activeEl = document.getElementById("sync-active");
+  if(statusText !== undefined){
+    statusEl.textContent = statusText;
+    statusEl.className = "meta" + (statusClass ? " " + statusClass : "");
+  }
+  if(syncCode){
+    setupEl.hidden = true;
+    activeEl.hidden = false;
+    document.getElementById("sync-code-display").value = syncCode;
+  } else {
+    setupEl.hidden = false;
+    activeEl.hidden = true;
+  }
+}
+
+function pushToCloud(){
+  if(!firebaseReady || !db || !syncCode) return;
+  var now = Date.now();
+  lastPushedAt = now;
+  db.collection("plannerSync").doc(syncCode).set({
+    data: JSON.stringify(state),
+    updatedAt: now,
+    deviceId: deviceId
+  }).then(function(){
+    updateSyncUI("Sincronizado — " + new Date(now).toLocaleTimeString("es-ES"), "sync-status-ok");
+  }).catch(function(e){
+    console.warn("No se pudo sincronizar con la nube.", e);
+    updateSyncUI("Sin conexión. Se sincronizará cuando vuelva internet.", "sync-status-warn");
+  });
+}
+
+function applyRemoteState(payload){
+  applyingRemoteUpdate = true;
+  try{
+    state = mergeIntoDefaultState(JSON.parse(payload.data));
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+    lastAppliedRemoteAt = payload.updatedAt;
+    rerenderEverything();
+    updateSyncUI("Sincronizado — " + new Date(payload.updatedAt).toLocaleTimeString("es-ES"), "sync-status-ok");
+  } finally {
+    applyingRemoteUpdate = false;
+  }
+}
+
+function attachSyncListener(){
+  if(!firebaseReady || !db || !syncCode) return;
+  if(syncUnsub){ syncUnsub(); syncUnsub = null; }
+  updateSyncUI("Sincronizando...", "");
+  syncUnsub = db.collection("plannerSync").doc(syncCode).onSnapshot(function(snap){
+    if(snap.metadata.hasPendingWrites) return;
+    if(!snap.exists){ pushToCloud(); return; }
+    var payload = snap.data();
+    if(!payload || typeof payload.updatedAt !== "number") return;
+    if(payload.updatedAt <= lastAppliedRemoteAt) return;
+    if(payload.deviceId === deviceId && payload.updatedAt === lastPushedAt) return;
+    applyRemoteState(payload);
+  }, function(err){
+    console.warn("Error de sincronización.", err);
+    updateSyncUI("No se pudo conectar con la sincronización.", "sync-status-warn");
+  });
+}
+
+document.getElementById("sync-generate-btn").addEventListener("click", function(){
+  if(!firebaseReady){
+    window.alert("La sincronización todavía no está configurada en esta app (falta conectar un proyecto de Firebase).");
+    return;
+  }
+  syncCode = generateSyncCode();
+  try{ localStorage.setItem(SYNC_CODE_KEY, syncCode); }catch(e){}
+  updateSyncUI();
+  attachSyncListener();
+  pushToCloud();
+});
+document.getElementById("sync-join-btn").addEventListener("click", function(){
+  var input = document.getElementById("sync-code-input");
+  var code = input.value.trim();
+  if(!code) return;
+  if(!firebaseReady){
+    window.alert("La sincronización todavía no está configurada en esta app (falta conectar un proyecto de Firebase).");
+    return;
+  }
+  var ok = window.confirm("Esto traerá los datos guardados con ese código y reemplazará los datos de este dispositivo. ¿Continuar?");
+  if(!ok) return;
+  syncCode = code;
+  try{ localStorage.setItem(SYNC_CODE_KEY, syncCode); }catch(e){}
+  input.value = "";
+  updateSyncUI();
+  attachSyncListener();
+});
+document.getElementById("sync-copy-btn").addEventListener("click", function(){
+  var val = document.getElementById("sync-code-display").value;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(val).catch(function(){});
+  }
+});
+document.getElementById("sync-disable-btn").addEventListener("click", function(){
+  var ok = window.confirm("Esto desconecta la sincronización solo en este dispositivo. Tus datos siguen guardados aquí y en la nube bajo el código, por si quieres reconectarlo después.");
+  if(!ok) return;
+  if(syncUnsub){ syncUnsub(); syncUnsub = null; }
+  syncCode = null;
+  try{ localStorage.removeItem(SYNC_CODE_KEY); }catch(e){}
+  updateSyncUI("");
+});
+
+if(!firebaseReady){
+  updateSyncUI("Sincronización no configurada todavía.", "sync-status-warn");
+} else if(syncCode){
+  attachSyncListener();
+} else {
+  updateSyncUI("");
+}
 
 /* ---------- routing ---------- */
 function showView(name){

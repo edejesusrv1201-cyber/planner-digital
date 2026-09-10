@@ -1,4 +1,4 @@
-var CACHE_NAME = "planner-digital-v5";
+var CACHE_NAME = "planner-digital-v8";
 var APP_SHELL = [
   "./",
   "./index.html",
@@ -6,9 +6,17 @@ var APP_SHELL = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/apple-touch-icon.png",
+  "./icons/apple-touch-icon-152.png",
+  "./icons/apple-touch-icon-167.png",
+  "./icons/apple-touch-icon-180.png",
   "./icons/favicon-32.png",
-  "./icons/favicon-16.png"
+  "./icons/favicon-16.png",
+  "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js",
+  "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"
 ];
+function isFirebaseAsset(url){
+  return url.hostname === "www.gstatic.com" && url.pathname.indexOf("/firebasejs/") === 0;
+}
 
 self.addEventListener("install", function(event){
   event.waitUntil(
@@ -35,7 +43,7 @@ self.addEventListener("fetch", function(event){
   if(event.request.method !== "GET") return;
 
   var url = new URL(event.request.url);
-  if(url.origin !== self.location.origin) return; // deja pasar recursos externos (ej. Google Fonts)
+  if(url.origin !== self.location.origin && !isFirebaseAsset(url)) return; // deja pasar recursos externos (ej. Google Fonts, datos de Firestore)
 
   event.respondWith(
     caches.match(event.request).then(function(cached){
