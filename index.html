@@ -286,9 +286,17 @@ textarea{resize:vertical;min-height:80px;line-height:1.5}
 .chip-tag{align-self:flex-start;font-size:8.5px;text-transform:uppercase;letter-spacing:.04em;background:color-mix(in srgb, var(--chip-color) 50%, transparent);color:var(--color-text);padding:1px 5px;border-radius:999px;margin-top:1px}
 
 /* finance */
-.expense-row{display:grid;grid-template-columns:1fr 110px 130px 32px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--color-border)}
+.expense-row{display:grid;grid-template-columns:1fr 100px 64px 130px 32px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--color-border)}
 .expense-row:last-child{border-bottom:none}
-.expense-header{display:grid;grid-template-columns:1fr 110px 130px 32px;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-faint);padding-bottom:8px;border-bottom:1px solid var(--color-border-strong)}
+.expense-header{display:grid;grid-template-columns:1fr 100px 64px 130px 32px;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-faint);padding-bottom:8px;border-bottom:1px solid var(--color-border-strong)}
+.counter-row{display:flex;flex-direction:column;gap:10px;padding:12px 0;border-bottom:1px solid var(--color-border);border-radius:var(--radius-sm);transition:background .4s}
+.counter-row:last-child{border-bottom:none}
+.counter-row.flash{background:color-mix(in srgb, var(--color-accent) 14%, transparent)}
+.counter-top{display:grid;grid-template-columns:1fr 130px 32px;gap:10px;align-items:center}
+.counter-bottom{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.counter-bottom .counter-amount{width:110px;flex:none}
+.counter-summary{margin-left:auto;font-size:13px;color:var(--color-text-muted);font-variant-numeric:tabular-nums;text-align:right}
+.counter-summary strong{color:var(--color-accent-300);font-weight:600}
 .fixed-row{display:grid;grid-template-columns:1fr 100px 64px 130px 32px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--color-border)}
 .fixed-row:last-child{border-bottom:none}
 .fixed-header{display:grid;grid-template-columns:1fr 100px 64px 130px 32px;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-faint);padding-bottom:8px;border-bottom:1px solid var(--color-border-strong)}
@@ -349,8 +357,11 @@ footer.appfoot{padding:20px 32px 40px;color:var(--color-text-faint);font-size:12
   .content{padding:20px 16px 50px}
   .grid-cards{grid-template-columns:1fr}
   .cal-day{font-size:12px}
-  .expense-row,.expense-header{grid-template-columns:1fr 90px 110px 28px;gap:6px}
-  .fixed-row,.fixed-header{grid-template-columns:1fr 80px 50px 110px 28px;gap:6px}
+  .expense-header,.fixed-header{display:none}
+  .expense-row,.fixed-row{grid-template-columns:84px 56px 1fr 28px;gap:6px;padding:10px 0}
+  .expense-row .expense-concept,.fixed-row .fixed-concept{grid-column:1 / -1}
+  .counter-top{grid-template-columns:1fr 110px 28px;gap:6px}
+  .counter-summary{flex:1 1 100%;margin-left:0;text-align:left}
 }
 body{padding-bottom:env(safe-area-inset-bottom)}
 </style>
@@ -581,6 +592,12 @@ body{padding-bottom:env(safe-area-inset-bottom)}
         </div>
       </div>
 
+      <div class="tabs" id="quincena-tabs">
+        <button type="button" class="tab" data-q="0">Mes completo</button>
+        <button type="button" class="tab" data-q="1">1ª quincena</button>
+        <button type="button" class="tab" data-q="2">2ª quincena</button>
+      </div>
+
       <div class="stat-row">
         <div class="stat"><div class="stat-label">Ingresos</div><div class="stat-value" id="fin-total-ingresos">$0.00</div></div>
         <div class="stat"><div class="stat-label">Gastos totales</div><div class="stat-value" id="fin-total-gastos">$0.00</div></div>
@@ -589,9 +606,15 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 
       <div class="card">
         <h2>Ingresos</h2>
-        <div class="field">
-          <label for="salary-input">Salario / ingreso de este mes</label>
-          <input type="number" id="salary-input" min="0" step="0.01" placeholder="0.00">
+        <div class="grid-2">
+          <div class="field">
+            <label for="salary-q1" id="salary-q1-label">1ª quincena (días 1–15)</label>
+            <input type="number" id="salary-q1" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div class="field">
+            <label for="salary-q2" id="salary-q2-label">2ª quincena (días 16–30)</label>
+            <input type="number" id="salary-q2" min="0" step="0.01" placeholder="0.00">
+          </div>
         </div>
       </div>
 
@@ -603,14 +626,21 @@ body{padding-bottom:env(safe-area-inset-bottom)}
       </div>
 
       <div class="card">
+        <h2>Contadores de gasto</h2>
+        <p class="empty-hint" style="padding-top:0">Para gastos que repites seguido (pasaje, gasolina, café…): escribe el monto y toca <strong>+ Sumar</strong> cada vez que gastes — se va acumulando en el periodo que tienes elegido arriba.</p>
+        <div id="counters-list"></div>
+        <div class="list-actions"><button type="button" class="btn" id="counter-add-btn">+ Nuevo contador</button></div>
+      </div>
+
+      <div class="card">
         <h2>Gastos variables</h2>
-        <div class="expense-header"><span>Concepto</span><span>Monto</span><span>Categoría</span><span></span></div>
+        <div class="expense-header"><span>Concepto</span><span>Monto</span><span>Día</span><span>Categoría</span><span></span></div>
         <div id="expenses-list"></div>
         <div class="list-actions"><button type="button" class="btn" id="expenses-add">+ Agregar gasto</button></div>
       </div>
 
       <div class="card">
-        <h2>Meta de ahorro</h2>
+        <h2>Meta de ahorro (mes completo)</h2>
         <div class="field">
           <label for="savings-goal-input">¿Cuánto quieres ahorrar este mes?</label>
           <input type="number" id="savings-goal-input" min="0" step="0.01" placeholder="0.00">
@@ -681,7 +711,7 @@ function monthKey(year, monthIndex){ return year + "-" + pad2(monthIndex + 1); }
 function isoDate(year, monthIndex, day){ return year + "-" + pad2(monthIndex + 1) + "-" + pad2(day); }
 function formatCurrency(n){
   var v = Math.round((Number(n) || 0) * 100) / 100;
-  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (v < 0 ? "-" : "") + "$" + Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /* ---------- selector de hora en 24h (dos <select>, sin AM/PM) ---------- */
@@ -754,6 +784,8 @@ function defaultState(){
     horario: { classes: defaultClasses() },
     finanzas: {
       fixedExpenses: [],
+      counters: [],
+      quincena: 0,
       savingsGoal: 0,
       byMonth: {}
     },
@@ -819,6 +851,8 @@ function mergeIntoDefaultState(parsed){
 
     if(parsed.finanzas){
       if(Array.isArray(parsed.finanzas.fixedExpenses)) base.finanzas.fixedExpenses = parsed.finanzas.fixedExpenses;
+      if(Array.isArray(parsed.finanzas.counters)) base.finanzas.counters = parsed.finanzas.counters;
+      if(parsed.finanzas.quincena === 0 || parsed.finanzas.quincena === 1 || parsed.finanzas.quincena === 2) base.finanzas.quincena = parsed.finanzas.quincena;
       if(typeof parsed.finanzas.savingsGoal === "number") base.finanzas.savingsGoal = parsed.finanzas.savingsGoal;
       if(parsed.finanzas.byMonth && typeof parsed.finanzas.byMonth === "object"){
         base.finanzas.byMonth = parsed.finanzas.byMonth;
@@ -831,6 +865,19 @@ function mergeIntoDefaultState(parsed){
           }) : []
         };
       }
+      Object.keys(base.finanzas.byMonth).forEach(function(k){
+        var rec = base.finanzas.byMonth[k];
+        if(!rec || typeof rec !== "object"){ delete base.finanzas.byMonth[k]; return; }
+        if(!Array.isArray(rec.expenses)) rec.expenses = [];
+        if(typeof rec.salaryQ1 === "number" || typeof rec.salaryQ2 === "number"){
+          rec.salaryQ1 = Number(rec.salaryQ1) || 0;
+          rec.salaryQ2 = Number(rec.salaryQ2) || 0;
+        } else {
+          rec.salaryQ1 = Number(rec.salary) || 0;
+          rec.salaryQ2 = 0;
+        }
+        rec.expenses.forEach(function(x){ if(!(Number(x.day) >= 1)) x.day = 1; });
+      });
     }
 
     if(parsed.reminders){
@@ -910,18 +957,30 @@ function dayHasContent(year, monthIndex, day){
   if(state.finanzas.fixedExpenses.some(function(fx){ return Number(fx.day) === day; })) return true;
   return false;
 }
-function getFinanceForMonth(year, monthIndex){
+function quincenaOfDay(day){ return (Number(day) || 1) <= 15 ? 1 : 2; }
+function inQuincena(day, q){ return !q || quincenaOfDay(day) === q; }
+function quincenaRange(year, monthIndex, q){
+  var dim = new Date(year, monthIndex + 1, 0).getDate();
+  if(q === 1) return { start: 1, end: 15 };
+  if(q === 2) return { start: 16, end: dim };
+  return { start: 1, end: dim };
+}
+function getFinanceForMonth(year, monthIndex, q){
+  q = q || 0;
   var mk = monthKey(year, monthIndex);
-  var rec = state.finanzas.byMonth[mk] || { salary: 0, expenses: [] };
-  var salary = Number(rec.salary) || 0;
-  var variableTotal = rec.expenses.reduce(function(s, x){ return s + (Number(x.amount) || 0); }, 0);
-  var fixedTotal = state.finanzas.fixedExpenses.reduce(function(s, x){ return s + (Number(x.amount) || 0); }, 0);
+  var rec = state.finanzas.byMonth[mk] || { salaryQ1: 0, salaryQ2: 0, expenses: [] };
+  var q1 = Number(rec.salaryQ1) || 0, q2 = Number(rec.salaryQ2) || 0;
+  var salary = q === 1 ? q1 : q === 2 ? q2 : q1 + q2;
+  var expenses = rec.expenses.filter(function(x){ return inQuincena(x.day, q); });
+  var fixed = state.finanzas.fixedExpenses.filter(function(x){ return inQuincena(x.day, q); });
+  var variableTotal = expenses.reduce(function(s, x){ return s + (Number(x.amount) || 0); }, 0);
+  var fixedTotal = fixed.reduce(function(s, x){ return s + (Number(x.amount) || 0); }, 0);
   var totalExpenses = variableTotal + fixedTotal;
-  return { salary: salary, variableTotal: variableTotal, fixedTotal: fixedTotal, totalExpenses: totalExpenses, balance: salary - totalExpenses, record: rec };
+  return { salary: salary, variableTotal: variableTotal, fixedTotal: fixedTotal, totalExpenses: totalExpenses, balance: salary - totalExpenses, record: rec, expenses: expenses, fixed: fixed };
 }
 function ensureFinanceMonth(year, monthIndex){
   var mk = monthKey(year, monthIndex);
-  if(!state.finanzas.byMonth[mk]) state.finanzas.byMonth[mk] = { salary: 0, expenses: [] };
+  if(!state.finanzas.byMonth[mk]) state.finanzas.byMonth[mk] = { salaryQ1: 0, salaryQ2: 0, expenses: [] };
   return state.finanzas.byMonth[mk];
 }
 
@@ -1796,7 +1855,9 @@ function categoryOptions(selected){
     return '<option value="' + c + '"' + (c === selected ? " selected" : "") + ">" + c + "</option>";
   }).join("");
 }
-var salaryInput = document.getElementById("salary-input");
+var salaryQ1El = document.getElementById("salary-q1");
+var salaryQ2El = document.getElementById("salary-q2");
+var countersListEl = document.getElementById("counters-list");
 var fixedListEl = document.getElementById("fixed-list");
 var fixedAddEl = document.getElementById("fixed-add");
 var expensesListEl = document.getElementById("expenses-list");
@@ -1860,17 +1921,26 @@ fixedAddEl.addEventListener("click", function(){
   });
 });
 
+function currentQuincena(){ return state.finanzas.quincena || 0; }
+
+function defaultEntryDay(){
+  var range = quincenaRange(state.mensual.selectedYear, state.mensual.selected, currentQuincena());
+  return Math.min(range.end, Math.max(range.start, new Date().getDate()));
+}
+
 function renderExpenses(){
   var rec = ensureFinanceMonth(state.mensual.selectedYear, state.mensual.selected);
-  var list = rec.expenses;
+  var q = currentQuincena();
+  var list = rec.expenses.filter(function(x){ return !x.counterId && inQuincena(x.day, q); });
   if(!list.length){
-    expensesListEl.innerHTML = '<p class="empty-hint">No hay gastos todavía. Agrega uno abajo.</p>';
+    expensesListEl.innerHTML = '<p class="empty-hint">No hay gastos en este periodo. Agrega uno abajo.</p>';
     return;
   }
   expensesListEl.innerHTML = list.map(function(x){
     return '<div class="expense-row" data-id="' + x.id + '">' +
       '<input type="text" class="expense-concept" value="' + escapeHtml(x.concept) + '" placeholder="Concepto">' +
       '<input type="number" class="expense-amount" value="' + (Number(x.amount) || 0) + '" step="0.01" min="0" placeholder="0.00">' +
+      '<input type="number" class="expense-day" value="' + (Number(x.day) || 1) + '" min="1" max="31" placeholder="Día">' +
       '<select class="expense-category">' + categoryOptions(x.category) + "</select>" +
       '<button type="button" class="btn-icon expense-delete" aria-label="Eliminar gasto" title="Eliminar">✕</button>' +
       "</div>";
@@ -1884,13 +1954,20 @@ expensesListEl.addEventListener("input", function(e){
   if(!x) return;
   if(e.target.classList.contains("expense-concept")){ x.concept = e.target.value; saveState(); }
   else if(e.target.classList.contains("expense-amount")){ x.amount = parseFloat(e.target.value) || 0; saveState(); refreshFinanceView(); }
+  else if(e.target.classList.contains("expense-day")){
+    x.day = Math.min(31, Math.max(1, parseInt(e.target.value, 10) || 1));
+    saveState();
+    refreshFinanceView();
+  }
 });
 expensesListEl.addEventListener("change", function(e){
-  if(!e.target.classList.contains("expense-category")) return;
   var row = e.target.closest(".expense-row");
+  if(!row) return;
   var rec = ensureFinanceMonth(state.mensual.selectedYear, state.mensual.selected);
   var x = rec.expenses.find(function(v){ return v.id === row.dataset.id; });
-  if(x){ x.category = e.target.value; saveState(); refreshFinanceView(); }
+  if(!x) return;
+  if(e.target.classList.contains("expense-category")){ x.category = e.target.value; saveState(); refreshFinanceView(); }
+  else if(e.target.classList.contains("expense-day")){ renderExpenses(); }
 });
 expensesListEl.addEventListener("click", function(e){
   if(!e.target.classList.contains("expense-delete")) return;
@@ -1903,7 +1980,7 @@ expensesListEl.addEventListener("click", function(e){
 });
 expensesAddEl.addEventListener("click", function(){
   var rec = ensureFinanceMonth(state.mensual.selectedYear, state.mensual.selected);
-  var x = { id: uid(), concept: "", amount: 0, category: "Otros" };
+  var x = { id: uid(), concept: "", amount: 0, category: "Otros", day: defaultEntryDay() };
   rec.expenses.push(x);
   saveState();
   renderExpenses();
@@ -1913,10 +1990,144 @@ expensesAddEl.addEventListener("click", function(){
     if(input) input.focus();
   });
 });
-salaryInput.addEventListener("input", function(){
+salaryQ1El.addEventListener("input", function(){
   var rec = ensureFinanceMonth(state.mensual.selectedYear, state.mensual.selected);
-  rec.salary = parseFloat(salaryInput.value) || 0;
+  rec.salaryQ1 = parseFloat(salaryQ1El.value) || 0;
   saveState();
+  refreshFinanceView();
+});
+salaryQ2El.addEventListener("input", function(){
+  var rec = ensureFinanceMonth(state.mensual.selectedYear, state.mensual.selected);
+  rec.salaryQ2 = parseFloat(salaryQ2El.value) || 0;
+  saveState();
+  refreshFinanceView();
+});
+
+/* ---------- contadores de gasto (pasaje, gasolina, ...) ---------- */
+function counterEntries(counterId, q){
+  var rec = ensureFinanceMonth(state.mensual.selectedYear, state.mensual.selected);
+  return rec.expenses.filter(function(x){ return x.counterId === counterId && inQuincena(x.day, q); });
+}
+function counterSummaryHtml(c){
+  var list = counterEntries(c.id, currentQuincena());
+  var total = list.reduce(function(s, x){ return s + (Number(x.amount) || 0); }, 0);
+  if(!list.length) return "Sin registros en este periodo";
+  return list.length + (list.length === 1 ? " vez" : " veces") + " · <strong>" + formatCurrency(total) + "</strong>";
+}
+function renderCounters(){
+  var list = state.finanzas.counters;
+  if(!list.length){
+    countersListEl.innerHTML = '<p class="empty-hint">No hay contadores todavía. Crea uno (ej. "Pasaje") abajo.</p>';
+    return;
+  }
+  countersListEl.innerHTML = list.map(function(c){
+    return '<div class="counter-row" data-id="' + c.id + '">' +
+      '<div class="counter-top">' +
+        '<input type="text" class="counter-name" value="' + escapeHtml(c.name) + '" placeholder="Ej. Pasaje, Gasolina">' +
+        '<select class="counter-category" aria-label="Categoría">' + categoryOptions(c.category) + "</select>" +
+        '<button type="button" class="btn-icon counter-delete" aria-label="Eliminar contador" title="Eliminar contador">✕</button>' +
+      "</div>" +
+      '<div class="counter-bottom">' +
+        '<input type="number" class="counter-amount" value="' + (Number(c.amount) || "") + '" step="0.01" min="0" placeholder="Monto" aria-label="Monto por vez">' +
+        '<button type="button" class="btn counter-add">+ Sumar</button>' +
+        '<button type="button" class="btn btn-secondary counter-undo" title="Quitar el último registro" aria-label="Quitar el último registro">− Quitar</button>' +
+        '<span class="counter-summary">' + counterSummaryHtml(c) + "</span>" +
+      "</div>" +
+      "</div>";
+  }).join("");
+}
+function syncCounterEntries(c){
+  Object.keys(state.finanzas.byMonth).forEach(function(k){
+    state.finanzas.byMonth[k].expenses.forEach(function(x){
+      if(x.counterId === c.id){ x.concept = c.name; x.category = c.category; }
+    });
+  });
+}
+function findCounterRow(el){
+  var row = el.closest(".counter-row");
+  if(!row) return null;
+  var c = state.finanzas.counters.find(function(v){ return v.id === row.dataset.id; });
+  return c ? { row: row, counter: c } : null;
+}
+countersListEl.addEventListener("input", function(e){
+  var f = findCounterRow(e.target);
+  if(!f) return;
+  if(e.target.classList.contains("counter-name")){ f.counter.name = e.target.value; syncCounterEntries(f.counter); saveState(); }
+  else if(e.target.classList.contains("counter-amount")){ f.counter.amount = parseFloat(e.target.value) || 0; saveState(); }
+});
+countersListEl.addEventListener("change", function(e){
+  var f = findCounterRow(e.target);
+  if(!f || !e.target.classList.contains("counter-category")) return;
+  f.counter.category = e.target.value;
+  syncCounterEntries(f.counter);
+  saveState();
+  refreshFinanceView();
+});
+countersListEl.addEventListener("click", function(e){
+  var f = findCounterRow(e.target);
+  if(!f) return;
+  var c = f.counter, row = f.row;
+  var rec = ensureFinanceMonth(state.mensual.selectedYear, state.mensual.selected);
+  var summaryEl = row.querySelector(".counter-summary");
+
+  if(e.target.classList.contains("counter-add")){
+    var amountEl = row.querySelector(".counter-amount");
+    var amount = parseFloat(amountEl.value) || 0;
+    if(!(amount > 0)){
+      window.alert("Escribe primero el monto de cada vez (por ejemplo 15) y luego toca + Sumar.");
+      amountEl.focus();
+      return;
+    }
+    c.amount = amount;
+    rec.expenses.push({ id: uid(), concept: c.name, amount: amount, category: c.category, day: defaultEntryDay(), counterId: c.id });
+    saveState();
+    summaryEl.innerHTML = counterSummaryHtml(c);
+    row.classList.add("flash");
+    setTimeout(function(){ row.classList.remove("flash"); }, 350);
+    refreshFinanceView();
+  } else if(e.target.classList.contains("counter-undo")){
+    var entries = counterEntries(c.id, currentQuincena());
+    if(!entries.length) return;
+    var last = entries[entries.length - 1];
+    rec.expenses = rec.expenses.filter(function(x){ return x.id !== last.id; });
+    saveState();
+    summaryEl.innerHTML = counterSummaryHtml(c);
+    refreshFinanceView();
+  } else if(e.target.classList.contains("counter-delete")){
+    var count = 0;
+    Object.keys(state.finanzas.byMonth).forEach(function(k){
+      count += state.finanzas.byMonth[k].expenses.filter(function(x){ return x.counterId === c.id; }).length;
+    });
+    var ok = window.confirm('¿Eliminar el contador "' + (c.name || "sin nombre") + '"?' + (count ? " También se borrarán sus " + count + " registro" + (count === 1 ? "" : "s") + " de todos los meses." : ""));
+    if(!ok) return;
+    state.finanzas.counters = state.finanzas.counters.filter(function(v){ return v.id !== c.id; });
+    Object.keys(state.finanzas.byMonth).forEach(function(k){
+      var r = state.finanzas.byMonth[k];
+      r.expenses = r.expenses.filter(function(x){ return x.counterId !== c.id; });
+    });
+    saveState();
+    renderCounters();
+    refreshFinanceView();
+  }
+});
+document.getElementById("counter-add-btn").addEventListener("click", function(){
+  var c = { id: uid(), name: "", category: "Transporte", amount: 0 };
+  state.finanzas.counters.push(c);
+  saveState();
+  renderCounters();
+  requestAnimationFrame(function(){
+    var input = countersListEl.querySelector('.counter-row[data-id="' + c.id + '"] .counter-name');
+    if(input) input.focus();
+  });
+});
+
+document.getElementById("quincena-tabs").addEventListener("click", function(e){
+  var btn = e.target.closest(".tab");
+  if(!btn) return;
+  state.finanzas.quincena = Number(btn.dataset.q) || 0;
+  saveState();
+  renderExpenses();
+  renderCounters();
   refreshFinanceView();
 });
 savingsGoalInput.addEventListener("input", function(){
@@ -1934,8 +2145,8 @@ function renderFinanceCharts(fin, year, month){
 
   var totals = {};
   CATEGORIES.forEach(function(c){ totals[c] = 0; });
-  fin.record.expenses.forEach(function(x){ var c = x.category || "Otros"; totals[c] = (totals[c] || 0) + (Number(x.amount) || 0); });
-  state.finanzas.fixedExpenses.forEach(function(x){ var c = x.category || "Otros"; totals[c] = (totals[c] || 0) + (Number(x.amount) || 0); });
+  fin.expenses.forEach(function(x){ var c = x.category || "Otros"; totals[c] = (totals[c] || 0) + (Number(x.amount) || 0); });
+  fin.fixed.forEach(function(x){ var c = x.category || "Otros"; totals[c] = (totals[c] || 0) + (Number(x.amount) || 0); });
   var pieItems = CATEGORIES.map(function(c){ return { label: c, value: totals[c] || 0, color: CATEGORY_COLORS[c] }; });
   drawPieChart(document.getElementById("chart-pie"), pieItems);
 
@@ -1956,19 +2167,32 @@ function renderFinanceCharts(fin, year, month){
   drawLineChart(document.getElementById("chart-line"), lineLabels, lineValues);
 }
 
+function setInputValueIfIdle(el, value){
+  if(document.activeElement !== el) el.value = value;
+}
 function refreshFinanceView(){
   var year = state.mensual.selectedYear, month = state.mensual.selected;
+  var q = currentQuincena();
+  var lastDay = quincenaRange(year, month, 2).end;
   document.getElementById("fin-month-label").textContent = MONTHS_ES[month] + " " + year;
-  var fin = getFinanceForMonth(year, month);
-  salaryInput.value = fin.salary || "";
-  savingsGoalInput.value = state.finanzas.savingsGoal || "";
+  document.getElementById("salary-q2-label").textContent = "2ª quincena (días 16–" + lastDay + ")";
+  document.querySelectorAll("#quincena-tabs .tab").forEach(function(btn){
+    var n = Number(btn.dataset.q);
+    btn.classList.toggle("active", n === q);
+    btn.textContent = n === 0 ? "Mes completo" : n === 1 ? "1ª quincena · 1–15" : "2ª quincena · 16–" + lastDay;
+  });
+  var fin = getFinanceForMonth(year, month, q);
+  var finMonth = getFinanceForMonth(year, month);
+  setInputValueIfIdle(salaryQ1El, Number(fin.record.salaryQ1) || "");
+  setInputValueIfIdle(salaryQ2El, Number(fin.record.salaryQ2) || "");
+  setInputValueIfIdle(savingsGoalInput, state.finanzas.savingsGoal || "");
   document.getElementById("fin-total-ingresos").textContent = formatCurrency(fin.salary);
   document.getElementById("fin-total-gastos").textContent = formatCurrency(fin.totalExpenses);
   var saldoEl = document.getElementById("fin-total-saldo");
   saldoEl.textContent = formatCurrency(fin.balance);
   saldoEl.classList.toggle("negative", fin.balance < 0);
 
-  var saved = Math.max(0, fin.balance);
+  var saved = Math.max(0, finMonth.balance);
   var goal = Number(state.finanzas.savingsGoal) || 0;
   var pct = goal > 0 ? Math.min(100, Math.round((saved / goal) * 100)) : 0;
   document.getElementById("savings-progress-fill").style.width = pct + "%";
@@ -1997,6 +2221,7 @@ function onMonthChanged(){
   renderDayPanel();
   renderHabits();
   renderExpenses();
+  renderCounters();
   refreshFinanceView();
 }
 
@@ -2246,6 +2471,7 @@ function rerenderEverything(){
   renderSchedule();
   renderFixedExpenses();
   renderExpenses();
+  renderCounters();
   refreshFinanceView();
   renderInicio();
   renderDiarioHoy();
@@ -2410,6 +2636,7 @@ renderSchedule();
 resetClassForm();
 renderFixedExpenses();
 renderExpenses();
+renderCounters();
 refreshFinanceView();
 showView(location.hash.replace("#", "") || "inicio");
 
