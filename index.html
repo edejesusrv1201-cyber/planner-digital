@@ -166,7 +166,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 }
 
 /* inputs */
-input[type=text],input[type=number],input[type=time],textarea,select{
+input[type=text],input[type=number],input[type=time],input[type=date],textarea,select{
   background:var(--color-surface-2);
   border:1px solid var(--color-border);
   color:var(--color-text);
@@ -297,6 +297,19 @@ textarea{resize:vertical;min-height:80px;line-height:1.5}
 .counter-bottom .counter-amount{width:110px;flex:none}
 .counter-summary{margin-left:auto;font-size:13px;color:var(--color-text-muted);font-variant-numeric:tabular-nums;text-align:right}
 .counter-summary strong{color:var(--color-accent-300);font-weight:600}
+input[type=date]{color-scheme:dark}
+.payables-summary{font-size:13px;color:var(--color-text-muted);margin-bottom:4px;font-variant-numeric:tabular-nums}
+.payables-summary strong{color:var(--color-accent-300);font-weight:600}
+.payable-row{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid var(--color-border)}
+.payable-row:last-child{border-bottom:none}
+.payable-top{display:grid;grid-template-columns:1fr 32px;gap:10px;align-items:center}
+.payable-bottom{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.payable-bottom .payable-amount{width:110px;flex:none}
+.payable-bottom .payable-date{width:160px;flex:none}
+.payable-bottom .payable-category{width:130px;flex:none}
+.payable-status{margin-left:auto;font-size:12px;color:var(--color-text-muted)}
+.payable-status.today{color:var(--color-accent-300);font-weight:600}
+.payable-status.overdue{color:var(--color-danger);font-weight:600}
 .fixed-row{display:grid;grid-template-columns:1fr 100px 64px 130px 32px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--color-border)}
 .fixed-row:last-child{border-bottom:none}
 .fixed-header{display:grid;grid-template-columns:1fr 100px 64px 130px 32px;gap:10px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-faint);padding-bottom:8px;border-bottom:1px solid var(--color-border-strong)}
@@ -362,6 +375,9 @@ footer.appfoot{padding:20px 32px 40px;color:var(--color-text-faint);font-size:12
   .expense-row .expense-concept,.fixed-row .fixed-concept{grid-column:1 / -1}
   .counter-top{grid-template-columns:1fr 110px 28px;gap:6px}
   .counter-summary{flex:1 1 100%;margin-left:0;text-align:left}
+  .payable-bottom .payable-date{flex:1 1 140px;width:auto}
+  .payable-bottom .payable-category{flex:1 1 110px;width:auto}
+  .payable-status{flex:1 1 100%;margin-left:0}
 }
 body{padding-bottom:env(safe-area-inset-bottom)}
 </style>
@@ -640,6 +656,14 @@ body{padding-bottom:env(safe-area-inset-bottom)}
       </div>
 
       <div class="card">
+        <h2>Pagos pendientes</h2>
+        <p class="empty-hint" style="padding-top:0">Montos que tienes que pagar más adelante (tarjeta, préstamo…). Aparecen en el calendario el día que vencen y te avisan ese día. Al marcarlos como pagados pasan a tus gastos.</p>
+        <div class="payables-summary" id="payables-summary"></div>
+        <div id="payables-list"></div>
+        <div class="list-actions"><button type="button" class="btn" id="payable-add-btn">+ Agregar pago pendiente</button></div>
+      </div>
+
+      <div class="card">
         <h2>Meta de ahorro (mes completo)</h2>
         <div class="field">
           <label for="savings-goal-input">¿Cuánto quieres ahorrar este mes?</label>
@@ -785,6 +809,7 @@ function defaultState(){
     finanzas: {
       fixedExpenses: [],
       counters: [],
+      payables: [],
       quincena: 0,
       savingsGoal: 0,
       byMonth: {}
@@ -852,6 +877,7 @@ function mergeIntoDefaultState(parsed){
     if(parsed.finanzas){
       if(Array.isArray(parsed.finanzas.fixedExpenses)) base.finanzas.fixedExpenses = parsed.finanzas.fixedExpenses;
       if(Array.isArray(parsed.finanzas.counters)) base.finanzas.counters = parsed.finanzas.counters;
+      if(Array.isArray(parsed.finanzas.payables)) base.finanzas.payables = parsed.finanzas.payables;
       if(parsed.finanzas.quincena === 0 || parsed.finanzas.quincena === 1 || parsed.finanzas.quincena === 2) base.finanzas.quincena = parsed.finanzas.quincena;
       if(typeof parsed.finanzas.savingsGoal === "number") base.finanzas.savingsGoal = parsed.finanzas.savingsGoal;
       if(parsed.finanzas.byMonth && typeof parsed.finanzas.byMonth === "object"){
@@ -955,6 +981,7 @@ function dayHasContent(year, monthIndex, day){
   var log = state.habitLog[dk];
   if(log && Object.keys(log).some(function(k){ return log[k]; })) return true;
   if(state.finanzas.fixedExpenses.some(function(fx){ return Number(fx.day) === day; })) return true;
+  if(state.finanzas.payables.some(function(p){ return p.date === dk; })) return true;
   return false;
 }
 function quincenaOfDay(day){ return (Number(day) || 1) <= 15 ? 1 : 2; }
@@ -1128,10 +1155,14 @@ function renderCalendar(){
 function renderDayFixed(){
   var container = document.getElementById("day-fixed");
   var due = state.finanzas.fixedExpenses.filter(function(fx){ return Number(fx.day) === calSelectedDay; });
-  if(!due.length){ container.hidden = true; return; }
+  var dk = isoDate(state.mensual.selectedYear, state.mensual.selected, calSelectedDay);
+  var pay = state.finanzas.payables.filter(function(p){ return p.date === dk; });
+  if(!due.length && !pay.length){ container.hidden = true; return; }
   container.hidden = false;
   container.innerHTML = due.map(function(fx){
     return '<div class="summary-item"><span class="dot"></span><span>' + escapeHtml(fx.concept || "Gasto fijo") + " · " + formatCurrency(Number(fx.amount) || 0) + '</span></div>';
+  }).join("") + pay.map(function(p){
+    return '<div class="summary-item"><span class="dot"></span><span>Por pagar: ' + escapeHtml(p.concept || "Pago pendiente") + " · " + formatCurrency(Number(p.amount) || 0) + '</span></div>';
   }).join("");
 }
 function renderDayEvents(){
@@ -2121,6 +2152,127 @@ document.getElementById("counter-add-btn").addEventListener("click", function(){
   });
 });
 
+/* ---------- pagos pendientes (tarjeta, préstamos, ...) ---------- */
+var payablesListEl = document.getElementById("payables-list");
+
+function payableStatus(p){
+  if(!p.date) return { text: "Sin fecha", cls: "" };
+  var parts = p.date.split("-").map(Number);
+  var due = new Date(parts[0], parts[1] - 1, parts[2]);
+  var t = new Date();
+  var today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  var diff = Math.round((due - today) / 86400000);
+  if(diff === 0) return { text: "Vence hoy", cls: "today" };
+  if(diff === 1) return { text: "Vence mañana", cls: "" };
+  if(diff > 1) return { text: "Vence en " + diff + " días", cls: "" };
+  return { text: "Vencido hace " + (-diff) + (diff === -1 ? " día" : " días"), cls: "overdue" };
+}
+function updatePayablesSummary(){
+  var list = state.finanzas.payables;
+  var el = document.getElementById("payables-summary");
+  if(!list.length){ el.textContent = ""; return; }
+  var total = list.reduce(function(s, p){ return s + (Number(p.amount) || 0); }, 0);
+  var overdue = list.filter(function(p){ return payableStatus(p).cls === "overdue"; }).length;
+  el.innerHTML = "Por pagar: <strong>" + formatCurrency(total) + "</strong> · " + list.length + (list.length === 1 ? " pago" : " pagos") +
+    (overdue ? ' · <span style="color:var(--color-danger)">' + overdue + (overdue === 1 ? " vencido" : " vencidos") + "</span>" : "");
+}
+function renderPayables(){
+  var list = state.finanzas.payables.slice().sort(function(a, b){
+    return (a.date || "9999-99-99").localeCompare(b.date || "9999-99-99");
+  });
+  updatePayablesSummary();
+  if(!list.length){
+    payablesListEl.innerHTML = '<p class="empty-hint">No tienes pagos pendientes. Agrega uno (ej. "Tarjeta") abajo.</p>';
+    return;
+  }
+  payablesListEl.innerHTML = list.map(function(p){
+    var st = payableStatus(p);
+    return '<div class="payable-row" data-id="' + p.id + '">' +
+      '<div class="payable-top">' +
+        '<input type="text" class="payable-concept" value="' + escapeHtml(p.concept) + '" placeholder="Ej. Tarjeta, Préstamo">' +
+        '<button type="button" class="btn-icon payable-delete" aria-label="Eliminar pago pendiente" title="Eliminar">✕</button>' +
+      "</div>" +
+      '<div class="payable-bottom">' +
+        '<input type="number" class="payable-amount" value="' + (Number(p.amount) || "") + '" step="0.01" min="0" placeholder="Monto" aria-label="Monto a pagar">' +
+        '<input type="date" class="payable-date" value="' + escapeHtml(p.date || "") + '" aria-label="Fecha de vencimiento">' +
+        '<select class="payable-category" aria-label="Categoría">' + categoryOptions(p.category) + "</select>" +
+        '<button type="button" class="btn payable-paid">✓ Pagado</button>' +
+        '<span class="payable-status ' + st.cls + '">' + st.text + "</span>" +
+      "</div>" +
+      "</div>";
+  }).join("");
+}
+function findPayableRow(el){
+  var row = el.closest(".payable-row");
+  if(!row) return null;
+  var p = state.finanzas.payables.find(function(v){ return v.id === row.dataset.id; });
+  return p ? { row: row, payable: p } : null;
+}
+payablesListEl.addEventListener("input", function(e){
+  var f = findPayableRow(e.target);
+  if(!f) return;
+  if(e.target.classList.contains("payable-concept")){ f.payable.concept = e.target.value; saveState(); }
+  else if(e.target.classList.contains("payable-amount")){ f.payable.amount = parseFloat(e.target.value) || 0; saveState(); updatePayablesSummary(); }
+});
+payablesListEl.addEventListener("change", function(e){
+  var f = findPayableRow(e.target);
+  if(!f) return;
+  if(e.target.classList.contains("payable-date")){
+    f.payable.date = e.target.value;
+    saveState();
+    renderPayables();
+    renderCalendar();
+    renderDayPanel();
+  } else if(e.target.classList.contains("payable-category")){
+    f.payable.category = e.target.value;
+    saveState();
+  }
+});
+payablesListEl.addEventListener("click", function(e){
+  var f = findPayableRow(e.target);
+  if(!f) return;
+  var p = f.payable;
+  if(e.target.classList.contains("payable-delete")){
+    state.finanzas.payables = state.finanzas.payables.filter(function(v){ return v.id !== p.id; });
+    saveState();
+    renderPayables();
+    renderCalendar();
+    renderDayPanel();
+  } else if(e.target.classList.contains("payable-paid")){
+    var amount = Number(p.amount) || 0;
+    if(!(amount > 0)){
+      window.alert("Escribe primero el monto del pago.");
+      f.row.querySelector(".payable-amount").focus();
+      return;
+    }
+    var now = new Date();
+    var y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+    var ok = window.confirm('¿Marcar "' + (p.concept || "este pago") + '" (' + formatCurrency(amount) + ') como pagado?\n\nSe agregará a tus gastos de ' + MONTHS_ES[m] + " " + y + " (día " + d + ") y se quita de pendientes.");
+    if(!ok) return;
+    var rec = ensureFinanceMonth(y, m);
+    rec.expenses.push({ id: uid(), concept: p.concept || "Pago", amount: amount, category: p.category || "Otros", day: d });
+    state.finanzas.payables = state.finanzas.payables.filter(function(v){ return v.id !== p.id; });
+    saveState();
+    renderPayables();
+    renderExpenses();
+    refreshFinanceView();
+    renderCalendar();
+    renderDayPanel();
+  }
+});
+document.getElementById("payable-add-btn").addEventListener("click", function(){
+  var now = new Date();
+  var p = { id: uid(), concept: "", amount: 0, date: isoDate(now.getFullYear(), now.getMonth(), now.getDate()), category: "Otros" };
+  state.finanzas.payables.push(p);
+  saveState();
+  renderPayables();
+  renderCalendar();
+  requestAnimationFrame(function(){
+    var input = payablesListEl.querySelector('.payable-row[data-id="' + p.id + '"] .payable-concept');
+    if(input) input.focus();
+  });
+});
+
 document.getElementById("quincena-tabs").addEventListener("click", function(e){
   var btn = e.target.closest(".tab");
   if(!btn) return;
@@ -2397,6 +2549,15 @@ function checkReminders(){
     saveState();
   });
 
+  state.finanzas.payables.forEach(function(p){
+    if(p.date !== tKey || !(Number(p.amount) > 0)) return;
+    var pTag = "payable-" + p.id + "-" + tKey;
+    if(state.reminders.notifiedIds.indexOf(pTag) !== -1) return;
+    showLocalNotification("Pago pendiente hoy: " + (p.concept || "Pago"), formatCurrency(p.amount) + " vence hoy", pTag);
+    state.reminders.notifiedIds.push(pTag);
+    saveState();
+  });
+
   if(state.reminders.dailyCheckTime && state.reminders.notifiedDailyDates.indexOf(tKey) === -1 && state.reminders.dailyCheckTime <= hhmm){
     var dk = isoDate(now.getFullYear(), now.getMonth(), now.getDate());
     var pendingTasks = data.tasks.filter(function(t){ return !t.done; }).length + state.diario.quickTasks.filter(function(t){ return !t.done; }).length;
@@ -2472,6 +2633,7 @@ function rerenderEverything(){
   renderFixedExpenses();
   renderExpenses();
   renderCounters();
+  renderPayables();
   refreshFinanceView();
   renderInicio();
   renderDiarioHoy();
@@ -2637,6 +2799,7 @@ resetClassForm();
 renderFixedExpenses();
 renderExpenses();
 renderCounters();
+renderPayables();
 refreshFinanceView();
 showView(location.hash.replace("#", "") || "inicio");
 
